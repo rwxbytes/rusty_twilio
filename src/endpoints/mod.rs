@@ -1,4 +1,6 @@
 pub mod accounts;
+pub mod applications;
+
 pub use crate::Result;
 
 use reqwest::{Method, Response, Url};
