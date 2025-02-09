@@ -252,3 +252,52 @@ impl TwilioEndpoint for FetchApplication {
         Ok(resp.json().await?)
     }
 }
+
+#[derive(Clone, Debug)]
+pub struct ListApplications {
+    pub account_sid: String,
+    pub query: TwilioQuery<Self>,
+}
+
+impl ListApplications {
+    pub fn new(account_sid: impl Into<String>, query: TwilioQuery<Self>) -> Self {
+        Self {
+            account_sid: account_sid.into(),
+            query,
+        }
+    }
+}
+
+impl TwilioEndpoint for ListApplications {
+    const PATH: &'static str = "2010-04-01/Accounts/{AccountSid}/Applications.json";
+
+    const METHOD: Method = Method::GET;
+
+    type ResponseBody = ListApplicationsResponse;
+
+    fn query_params(&self) -> Option<QueryValues> {
+        Some(self.query.params.clone())
+    }
+
+    fn path_params(&self) -> Vec<(&'static str, &str)> {
+        vec![("{AccountSid}", &self.account_sid)]
+    }
+
+    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
+        Ok(resp.json().await?)
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct ListApplicationsResponse {
+    pub applications: Vec<ApplicationResponse>,
+    pub first_page_uri: String,
+    pub end: usize,
+    pub next_page_uri: Option<String>,
+    pub page: usize,
+    pub page_size: usize,
+    pub previous_page_uri: Option<String>,
+    pub start: usize,
+    pub uri: String,
+}
+
