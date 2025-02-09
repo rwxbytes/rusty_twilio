@@ -90,11 +90,6 @@ pub struct CreateApplicationBody {
 }
 
 impl CreateApplicationBody {
-    //pub fn new(friendly_name: impl Into<String>) -> Self {
-    //    let mut params = HashMap::new();
-    //    params.insert(FRIENDLY_NAME.to_string(), friendly_name.into());
-    //    Self { params }
-    //}
 
     pub fn with_friendly_name(mut self, friendly_name: impl Into<String>) -> Self {
         self.params

@@ -101,10 +101,6 @@ impl TwilioEndpoint for FetchAccount {
     }
 }
 
-//#[derive(Clone, Debug)]
-//pub struct ListAccountsQuery;
-//impl AccountQueryMarker for ListAccountsQuery {}
-
 impl AccountQueryMarker for ListAccounts {}
 
 #[derive(Clone, Debug)]
