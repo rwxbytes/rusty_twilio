@@ -33,7 +33,7 @@ pub struct ApplicationResponse {
     /// The date that this account was last updated, in GMT in RFC 2822 format.
     pub date_updated: String,
     /// A human-readable description of this account, up to 64 characters long. By default, the FriendlyName is your email address.
-    pub friendly_name: String,
+    pub friendly_name: Option<String>,
     /// The URL we call using a POST method to send message status information to your application.
     pub message_status_callback: Option<String>,
     /// The unique string that we created to identify the Application resource.
@@ -84,16 +84,21 @@ pub struct CreateApplication {
     pub body: CreateApplicationBody,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct CreateApplicationBody {
     pub params: HashMap<String, String>,
 }
 
 impl CreateApplicationBody {
-    pub fn new(friendly_name: impl Into<String>) -> Self {
-        let mut params = HashMap::new();
-        params.insert(FRIENDLY_NAME.to_string(), friendly_name.into());
-        Self { params }
+    //pub fn new(friendly_name: impl Into<String>) -> Self {
+    //    let mut params = HashMap::new();
+    //    params.insert(FRIENDLY_NAME.to_string(), friendly_name.into());
+    //    Self { params }
+    //}
+
+    pub fn with_friendly_name(mut self, friendly_name: impl Into<String>) -> Self {
+        self.params.insert(FRIENDLY_NAME.to_string(), friendly_name.into());
+        self
     }
 
     pub fn with_api_version(mut self, api_version: ApiVersion) -> Self {
@@ -301,3 +306,47 @@ pub struct ListApplicationsResponse {
     pub uri: String,
 }
 
+#[derive(Clone, Debug)]
+pub struct UpdateApplication {
+    pub account_sid: String,
+    pub application_sid: String,
+    pub body: UpdateApplicationBody,
+}
+pub type UpdateApplicationBody = CreateApplicationBody;
+
+impl UpdateApplication {
+    pub fn new(
+        account_sid: impl Into<String>,
+        application_sid: impl Into<String>,
+        body: UpdateApplicationBody,
+    ) -> Self {
+        Self {
+            account_sid: account_sid.into(),
+            application_sid: application_sid.into(),
+            body,
+        }
+    }
+}
+
+impl TwilioEndpoint for UpdateApplication {
+    const PATH: &'static str = "2010-04-01/Accounts/{AccountSid}/Applications/{Sid}.json";
+
+    const METHOD: Method = Method::POST;
+
+    type ResponseBody = ApplicationResponse;
+
+    fn path_params(&self) -> Vec<(&'static str, &str)> {
+        vec![
+            ("{AccountSid}", &self.account_sid),
+            ("{Sid}", &self.application_sid),
+        ]
+    }
+
+    fn request_body(&self) -> Result<RequestBody> {
+        Ok(RequestBody::Form(self.body.params.clone()))
+    }
+
+    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
+        Ok(resp.json().await?)
+    }
+}
