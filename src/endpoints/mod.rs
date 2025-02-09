@@ -1,12 +1,13 @@
 pub mod accounts;
 pub mod applications;
+pub mod voice;
 
-use std::collections::HashMap;
 pub use crate::Result;
+use std::collections::HashMap;
 
+use crate::endpoints::accounts::Status;
 use reqwest::{Method, Response, Url};
 pub use serde::{Deserialize, Serialize};
-use crate::endpoints::accounts::Status;
 
 #[derive(Debug)]
 pub enum RequestBody {
@@ -18,7 +19,6 @@ pub enum RequestBody {
 
 type QueryValues = Vec<(&'static str, String)>;
 
-
 #[derive(Clone, Debug, Default)]
 pub enum Region {
     Australia,
@@ -28,7 +28,7 @@ pub enum Region {
 }
 
 #[allow(async_fn_in_trait)]
-pub trait TwilioEndpoint{
+pub trait TwilioEndpoint {
     const BASE_URL: &'static str = "https://api.twilio.com";
 
     const PATH: &'static str;
@@ -121,3 +121,50 @@ impl<T: AccountQueryMarker> TwilioQuery<T> {
     }
 }
 
+const API_VERSION: &str = "ApiVersion";
+const VOICE_URL: &str = "VoiceUrl";
+const VOICE_METHOD: &str = "VoiceMethod";
+const VOICE_FALLBACK_URL: &str = "VoiceFallbackUrl";
+const VOICE_FALLBACK_METHOD: &str = "VoiceFallbackMethod";
+const STATUS_CALLBACK: &str = "StatusCallback";
+const STATUS_CALLBACK_METHOD: &str = "StatusCallbackMethod";
+const SMS_URL: &str = "SmsUrl";
+const SMS_METHOD: &str = "SmsMethod";
+const SMS_FALLBACK_URL: &str = "SmsFallbackUrl";
+const SMS_FALLBACK_METHOD: &str = "SmsFallbackMethod";
+const MESSAGE_STATUS_CALLBACK: &str = "MessageStatusCallback";
+const FRIENDLY_NAME: &str = "FriendlyName";
+const PUBLIC_APPLICATION_CONNECT_ENABLED: &str = "PublicApplicationConnectEnabled";
+const TO: &str = "To";
+const FROM: &str = "From";
+const URL: &str = "Url";
+const APPLICATION_SID: &str = "ApplicationSid";
+const TWIML: &str = "Twiml";
+const METHOD: &str = "Method";
+const FALLBACK_URL: &str = "FallbackUrl";
+const FALLBACK_METHOD: &str = "FallbackMethod";
+const STATUS_CALLBACK_EVENT: &str = "StatusCallbackEvent";
+const SEND_DIGITS: &str = "SendDigits";
+const TIMEOUT: &str = "Timeout";
+const RECORD: &str = "Record";
+const RECORDING_CHANNELS: &str = "RecordingChannels";
+const RECORDING_STATUS_CALLBACK: &str = "RecordingStatusCallback";
+const RECORDING_STATUS_CALLBACK_METHOD: &str = "RecordingStatusCallbackMethod";
+const RECORDING_STATUS_CALLBACK_EVENT: &str = "RecordingStatusCallbackEvent";
+const RECORDING_TRACK: &str = "RecordingTrack";
+const SIP_AUTH_USERNAME: &str = "SipAuthUsername";
+const SIP_AUTH_PASSWORD: &str = "SipAuthPassword";
+const MACHINE_DETECTION: &str = "MachineDetection";
+const MACHINE_DETECTION_TIMEOUT: &str = "MachineDetectionTimeout";
+const MACHINE_DETECTION_SILENCE_TIMEOUT: &str = "MachineDetectionSilenceTimeout";
+const MACHINE_DETECTION_SPEECH_THRESHOLD: &str = "MachineDetectionSpeechThreshold";
+const MACHINE_DETECTION_SPEECH_END_THRESHOLD: &str = "MachineDetectionSpeechEndThreshold";
+const TRIM: &str = "Trim";
+const ASYNC_AMD: &str = "AsyncAmd";
+const ASYNC_AMD_STATUS_CALLBACK: &str = "AsyncAmdStatusCallback";
+const ASYNC_AMD_STATUS_CALLBACK_METHOD: &str = "AsyncAmdStatusCallbackMethod";
+const CALLER_ID: &str = "CallerId";
+const BYOC_SID: &str = "ByocSid";
+const CALL_REASON: &str = "CallReason";
+const CALL_TOKEN: &str = "CallToken";
+const TIME_LIMIT: &str = "TimeLimit";
