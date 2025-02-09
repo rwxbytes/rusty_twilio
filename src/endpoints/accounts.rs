@@ -48,6 +48,8 @@ pub struct CreateAccount {
     pub friendly_name: String,
 }
 
+
+
 impl CreateAccount {
     pub fn new(friendly_name: impl Into<String>) -> Self {
         Self {
@@ -62,10 +64,9 @@ impl TwilioEndpoint for CreateAccount {
     type ResponseBody = AccountResponse;
 
     fn request_body(&self) -> Result<RequestBody> {
-        Ok(RequestBody::Form(vec![(
-            "FriendlyName",
-            self.friendly_name.clone(),
-        )]))
+        let mut form = HashMap::new();
+        form.insert("FriendlyName".to_string(), self.friendly_name.clone());
+        Ok(RequestBody::Form(form))
     }
 
     async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
@@ -186,18 +187,18 @@ impl UpdateAccount {
 
 #[derive(Clone, Debug, Default)]
 pub struct UpdateAccountBody {
-    pub friendly_name: Option<String>,
-    pub status: Option<Status>,
+    pub params: HashMap<String, String>,
 }
 
 impl UpdateAccountBody {
     pub fn with_friendly_name(mut self, friendly_name: impl Into<String>) -> Self {
-        self.friendly_name = Some(friendly_name.into());
+        self.params
+            .insert("FriendlyName".to_string(), friendly_name.into());
         self
     }
 
     pub fn with_status(mut self, status: Status) -> Self {
-        self.status = Some(status);
+        self.params.insert("Status".to_string(), status.to_string());
         self
     }
 }
@@ -212,17 +213,7 @@ impl TwilioEndpoint for UpdateAccount {
     }
 
     fn request_body(&self) -> Result<RequestBody> {
-        let mut form = vec![];
-
-        if let Some(friendly_name) = &self.body.friendly_name {
-            form.push(("FriendlyName", friendly_name.clone()));
-        }
-
-        if let Some(status) = &self.body.status {
-            form.push(("Status", status.to_string()));
-        }
-
-        Ok(RequestBody::Form(form))
+        Ok(RequestBody::Form(self.body.params.clone()))
     }
 
     async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {

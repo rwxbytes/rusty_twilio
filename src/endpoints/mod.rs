@@ -1,6 +1,7 @@
 pub mod accounts;
 pub mod applications;
 
+use std::collections::HashMap;
 pub use crate::Result;
 
 use reqwest::{Method, Response, Url};
@@ -11,7 +12,7 @@ pub enum RequestBody {
     Empty,
     Json(serde_json::Value),
     Multipart(reqwest::multipart::Form),
-    Form(Vec<(&'static str, String)>),
+    Form(HashMap<String, String>),
 }
 
 type QueryValues = Vec<(&'static str, String)>;
@@ -43,11 +44,11 @@ pub trait TwilioEndpoint{
         vec![]
     }
 
-    fn request_body(&self) -> crate::Result<RequestBody> {
+    fn request_body(&self) -> Result<RequestBody> {
         Ok(RequestBody::Empty)
     }
 
-    async fn response_body(self, resp: Response) -> crate::Result<Self::ResponseBody>;
+    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody>;
 
     fn url(&self) -> Url {
         let mut url = Self::BASE_URL.parse::<Url>().unwrap();
