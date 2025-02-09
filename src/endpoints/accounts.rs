@@ -101,46 +101,20 @@ impl TwilioEndpoint for FetchAccount {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+//#[derive(Clone, Debug)]
+//pub struct ListAccountsQuery;
+//impl AccountQueryMarker for ListAccountsQuery {}
+
+impl AccountQueryMarker for ListAccounts {}
+
+#[derive(Clone, Debug)]
 pub struct ListAccounts {
-    query: ListAccountsQuery,
+    query: TwilioQuery<Self>,
 }
 
 impl ListAccounts {
-    pub fn new(query: ListAccountsQuery) -> Self {
+    pub fn new(query: TwilioQuery<Self>) -> Self {
         Self { query }
-    }
-}
-
-#[derive(Clone, Debug, Default)]
-pub struct ListAccountsQuery {
-    params: QueryValues,
-}
-
-impl ListAccountsQuery {
-    pub fn with_friendly_name(mut self, friendly_name: impl Into<String>) -> Self {
-        self.params.push(("FriendlyName", friendly_name.into()));
-        self
-    }
-
-    pub fn with_status(mut self, status: Status) -> Self {
-        self.params.push(("Status", status.to_string()));
-        self
-    }
-
-    pub fn with_page_size(mut self, page_size: u32) -> Self {
-        self.params.push(("PageSize", page_size.to_string()));
-        self
-    }
-
-    pub fn with_page(mut self, page: u32) -> Self {
-        self.params.push(("Page", page.to_string()));
-        self
-    }
-
-    pub fn with_page_token(mut self, page_token: impl Into<String>) -> Self {
-        self.params.push(("PageToken", page_token.into()));
-        self
     }
 }
 
