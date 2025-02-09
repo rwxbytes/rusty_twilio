@@ -1,0 +1,192 @@
+//! Applications endpoints
+//! See [Applications reference](https://www.twilio.com/docs/usage/api/applications)
+
+use super::*;
+use std::collections::HashMap;
+use std::string::ToString;
+use strum::Display;
+
+const API_VERSION: &str = "ApiVersion";
+const VOICE_URL: &str = "VoiceUrl";
+const VOICE_METHOD: &str = "VoiceMethod";
+const VOICE_FALLBACK_URL: &str = "VoiceFallbackUrl";
+const VOICE_FALLBACK_METHOD: &str = "VoiceFallbackMethod";
+const STATUS_CALLBACK: &str = "StatusCallback";
+const STATUS_CALLBACK_METHOD: &str = "StatusCallbackMethod";
+const SMS_URL: &str = "SmsUrl";
+const SMS_METHOD: &str = "SmsMethod";
+const SMS_FALLBACK_URL: &str = "SmsFallbackUrl";
+const SMS_FALLBACK_METHOD: &str = "SmsFallbackMethod";
+const MESSAGE_STATUS_CALLBACK: &str = "MessageStatusCallback";
+const FRIENDLY_NAME: &str = "FriendlyName";
+const PUBLIC_APPLICATION_CONNECT_ENABLED: &str = "PublicApplicationConnectEnabled";
+
+#[derive(Clone, Debug, Deserialize)]
+/// See [Application Properties](https://www.twilio.com/docs/usage/api/applications#application-properties)
+pub struct ApplicationResponse {
+    /// The SID of the Account that created the Application resource.
+    pub account_sid: String,
+    /// The API version used to start a new TwiML session.
+    pub api_version: ApiVersion,
+    /// The date that this account was created, in GMT in RFC 2822 format
+    pub date_created: String,
+    /// The date that this account was last updated, in GMT in RFC 2822 format.
+    pub date_updated: String,
+    /// A human-readable description of this account, up to 64 characters long. By default, the FriendlyName is your email address.
+    pub friendly_name: String,
+    /// The URL we call using a POST method to send message status information to your application.
+    pub message_status_callback: Option<String>,
+    /// The unique string that we created to identify the Application resource.
+    pub sid: String,
+    /// The HTTP method we use to call sms_fallback_url. Can be: GET or POST.
+    pub sms_fallback_method: Option<String>,
+    /// The URL that we call when an error occurs while retrieving or executing the TwiML from sms_url.
+    pub sms_fallback_url: Option<String>,
+    /// The HTTP method we use to call sms_url. Can be: GET or POST.
+    pub sms_method: Option<String>,
+    /// The URL we call using a POST method to send status information to your application about SMS messages that refer to the application.
+    pub sms_status_callback: Option<String>,
+    /// The URL we call when the phone number receives an incoming SMS message.
+    pub sms_url: Option<String>,
+    /// The URL we call using the status_callback_method to send status information to your application.
+    pub status_callback: Option<String>,
+    /// The HTTP method we use to call status_callback. Can be: GET or POST.
+    pub status_callback_method: Option<String>,
+    /// The URI for this resource, relative to https://api.twilio.com
+    pub uri: String,
+    /// Whether we look up the caller's caller-ID name from the CNAME database (additional charges apply). Can be: true or false.
+    pub voice_caller_id_lookup: Option<bool>,
+    /// The HTTP method we use to call voice_fallback_url. Can be: GET or POST.
+    pub voice_fallback_method: Option<String>,
+    /// The URL that we call when an error occurs retrieving or executing the TwiML requested by url.
+    pub voice_fallback_url: Option<String>,
+    /// The HTTP method we use to call voice_url. Can be: GET or POST.
+    pub voice_method: Option<String>,
+    /// The URL we call when the phone number assigned to this application receives a call.
+    pub voice_url: Option<String>,
+    /// Whether to allow other Twilio accounts to dial this application using Dial verb. Can be: true or false.
+    pub public_application_connect_enabled: Option<bool>,
+}
+
+#[derive(Clone, Debug, Deserialize, Display)]
+pub enum ApiVersion {
+    #[serde(rename = "2010-04-01")]
+    #[strum(to_string = "2010-04-01")]
+    V20100401,
+    #[serde(rename = "2008-08-01")]
+    #[strum(to_string = "2008-08-01")]
+    V20080801,
+}
+
+#[derive(Clone, Debug)]
+pub struct CreateApplication {
+    pub account_sid: String,
+    pub body: CreateApplicationBody,
+}
+
+#[derive(Clone, Debug)]
+pub struct CreateApplicationBody {
+    pub params: HashMap<String, String>,
+}
+
+impl CreateApplicationBody {
+    pub fn new(friendly_name: impl Into<String>) -> Self {
+        let mut params = HashMap::new();
+        params.insert(FRIENDLY_NAME.to_string(), friendly_name.into());
+        Self { params }
+    }
+
+    pub fn with_api_version(mut self, api_version: ApiVersion) -> Self {
+        self.params.insert(API_VERSION.to_string(), api_version.to_string());
+        self
+    }
+
+    pub fn with_voice_url(mut self, voice_url: impl Into<String>) -> Self {
+        self.params.insert(VOICE_URL.to_string(), voice_url.into());
+        self
+    }
+
+    pub fn with_voice_method(mut self, voice_method: impl Into<String>) -> Self {
+        self.params.insert(VOICE_METHOD.to_string(), voice_method.into());
+        self
+    }
+
+    pub fn with_voice_fallback_url(mut self, voice_fallback_url: impl Into<String>) -> Self {
+        self.params.insert(VOICE_FALLBACK_URL.to_string(), voice_fallback_url.into());
+        self
+    }
+
+    pub fn with_voice_fallback_method(mut self, voice_fallback_method: impl Into<String>) -> Self {
+        self.params.insert(VOICE_FALLBACK_METHOD.to_string(), voice_fallback_method.into());
+        self
+    }
+
+    pub fn with_status_callback(mut self, status_callback: impl Into<String>) -> Self {
+        self.params.insert(STATUS_CALLBACK.to_string(), status_callback.into());
+        self
+    }
+
+    pub fn with_status_callback_method(mut self, status_callback_method: impl Into<String>) -> Self {
+        self.params.insert(STATUS_CALLBACK_METHOD.to_string(), status_callback_method.into());
+        self
+    }
+
+    pub fn with_sms_url(mut self, sms_url: impl Into<String>) -> Self {
+        self.params.insert(SMS_URL.to_string(), sms_url.into());
+        self
+    }
+
+    pub fn with_sms_method(mut self, sms_method: impl Into<String>) -> Self {
+        self.params.insert(SMS_METHOD.to_string(), sms_method.into());
+        self
+    }
+
+    pub fn with_sms_fallback_url(mut self, sms_fallback_url: impl Into<String>) -> Self {
+        self.params.insert(SMS_FALLBACK_URL.to_string(), sms_fallback_url.into());
+        self
+    }
+
+    pub fn with_sms_fallback_method(mut self, sms_fallback_method: impl Into<String>) -> Self {
+        self.params.insert(SMS_FALLBACK_METHOD.to_string(), sms_fallback_method.into());
+        self
+    }
+
+    pub fn with_message_status_callback(mut self, message_status_callback: impl Into<String>) -> Self {
+        self.params.insert(MESSAGE_STATUS_CALLBACK.to_string(), message_status_callback.into());
+        self
+    }
+
+    pub fn with_public_application_connect_enabled(mut self, public_application_connect_enabled: bool) -> Self {
+        self.params.insert(PUBLIC_APPLICATION_CONNECT_ENABLED.to_string(), public_application_connect_enabled.to_string());
+        self
+    }
+}
+
+impl CreateApplication {
+    pub fn new(account_sid: impl Into<String>, body: CreateApplicationBody) -> Self {
+        Self {
+            account_sid: account_sid.into(),
+            body,
+        }
+    }
+}
+
+impl TwilioEndpoint for CreateApplication {
+    const PATH: &'static str = "2010-04-01/Accounts/{AccountSid}/Applications.json";
+
+    const METHOD: Method = Method::POST;
+
+    type ResponseBody = ApplicationResponse;
+
+    fn path_params(&self) -> Vec<(&'static str, &str)> {
+        vec![("{AccountSid}", &self.account_sid)]
+    }
+
+    fn request_body(&self) -> Result<RequestBody> {
+        Ok(RequestBody::Form(self.body.params.clone()))
+    }
+
+    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
+        Ok(resp.json().await?)
+    }
+}
