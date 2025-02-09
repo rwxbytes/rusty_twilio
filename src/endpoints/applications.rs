@@ -6,21 +6,6 @@ use std::collections::HashMap;
 use std::string::ToString;
 use strum::Display;
 
-const API_VERSION: &str = "ApiVersion";
-const VOICE_URL: &str = "VoiceUrl";
-const VOICE_METHOD: &str = "VoiceMethod";
-const VOICE_FALLBACK_URL: &str = "VoiceFallbackUrl";
-const VOICE_FALLBACK_METHOD: &str = "VoiceFallbackMethod";
-const STATUS_CALLBACK: &str = "StatusCallback";
-const STATUS_CALLBACK_METHOD: &str = "StatusCallbackMethod";
-const SMS_URL: &str = "SmsUrl";
-const SMS_METHOD: &str = "SmsMethod";
-const SMS_FALLBACK_URL: &str = "SmsFallbackUrl";
-const SMS_FALLBACK_METHOD: &str = "SmsFallbackMethod";
-const MESSAGE_STATUS_CALLBACK: &str = "MessageStatusCallback";
-const FRIENDLY_NAME: &str = "FriendlyName";
-const PUBLIC_APPLICATION_CONNECT_ENABLED: &str = "PublicApplicationConnectEnabled";
-
 #[derive(Clone, Debug, Deserialize)]
 /// See [Application Properties](https://www.twilio.com/docs/usage/api/applications#application-properties)
 pub struct ApplicationResponse {
@@ -82,6 +67,15 @@ pub enum ApiVersion {
 pub struct CreateApplication {
     pub account_sid: String,
     pub body: CreateApplicationBody,
+}
+
+impl CreateApplication {
+    pub fn new(account_sid: impl Into<String>, body: CreateApplicationBody) -> Self {
+        Self {
+            account_sid: account_sid.into(),
+            body,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -191,14 +185,7 @@ impl CreateApplicationBody {
     }
 }
 
-impl CreateApplication {
-    pub fn new(account_sid: impl Into<String>, body: CreateApplicationBody) -> Self {
-        Self {
-            account_sid: account_sid.into(),
-            body,
-        }
-    }
-}
+
 
 impl TwilioEndpoint for CreateApplication {
     const PATH: &'static str = "2010-04-01/Accounts/{AccountSid}/Applications.json";
