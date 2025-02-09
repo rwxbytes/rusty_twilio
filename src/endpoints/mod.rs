@@ -6,6 +6,7 @@ pub use crate::Result;
 
 use reqwest::{Method, Response, Url};
 pub use serde::{Deserialize, Serialize};
+use crate::endpoints::accounts::Status;
 
 #[derive(Debug)]
 pub enum RequestBody {
@@ -74,3 +75,49 @@ pub trait TwilioEndpoint{
         url
     }
 }
+
+#[derive(Clone, Debug, Default)]
+pub struct TwilioQuery<T> {
+    params: QueryValues,
+    _marker: std::marker::PhantomData<T>,
+}
+
+impl<T> TwilioQuery<T> {
+    pub fn new() -> Self {
+        Self {
+            params: vec![],
+            _marker: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<T> TwilioQuery<T> {
+    pub fn with_friendly_name(mut self, friendly_name: impl Into<String>) -> Self {
+        self.params.push(("FriendlyName", friendly_name.into()));
+        self
+    }
+
+    pub fn with_page_size(mut self, page_size: u32) -> Self {
+        self.params.push(("PageSize", page_size.to_string()));
+        self
+    }
+
+    pub fn with_page(mut self, page: u32) -> Self {
+        self.params.push(("Page", page.to_string()));
+        self
+    }
+
+    pub fn with_page_token(mut self, page_token: impl Into<String>) -> Self {
+        self.params.push(("PageToken", page_token.into()));
+        self
+    }
+}
+
+trait AccountQueryMarker {}
+impl<T: AccountQueryMarker> TwilioQuery<T> {
+    pub fn with_status(mut self, status: Status) -> Self {
+        self.params.push(("Status", status.to_string()));
+        self
+    }
+}
+
