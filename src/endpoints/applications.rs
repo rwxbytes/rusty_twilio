@@ -97,7 +97,8 @@ impl CreateApplicationBody {
     //}
 
     pub fn with_friendly_name(mut self, friendly_name: impl Into<String>) -> Self {
-        self.params.insert(FRIENDLY_NAME.to_string(), friendly_name.into());
+        self.params
+            .insert(FRIENDLY_NAME.to_string(), friendly_name.into());
         self
     }
 
@@ -348,5 +349,39 @@ impl TwilioEndpoint for UpdateApplication {
 
     async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
         Ok(resp.json().await?)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct DeleteApplication {
+    pub account_sid: String,
+    pub application_sid: String,
+}
+
+impl DeleteApplication {
+    pub fn new(account_sid: impl Into<String>, application_sid: impl Into<String>) -> Self {
+        Self {
+            account_sid: account_sid.into(),
+            application_sid: application_sid.into(),
+        }
+    }
+}
+
+impl TwilioEndpoint for DeleteApplication {
+    const PATH: &'static str = "2010-04-01/Accounts/{AccountSid}/Applications/{Sid}.json";
+
+    const METHOD: Method = Method::DELETE;
+
+    type ResponseBody = ();
+
+    fn path_params(&self) -> Vec<(&'static str, &str)> {
+        vec![
+            ("{AccountSid}", &self.account_sid),
+            ("{Sid}", &self.application_sid),
+        ]
+    }
+
+    async fn response_body(self, _resp: Response) -> Result<Self::ResponseBody> {
+        Ok(())
     }
 }
