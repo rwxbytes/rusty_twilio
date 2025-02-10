@@ -3,9 +3,9 @@
 
 use super::*;
 use crate::endpoints::applications::ApiVersion;
+use crate::url::query::{ByToAndFrom, CallQueryMarker, TwilioQuery};
 use std::string::ToString;
 use strum::Display;
-use crate::url::query::{TwilioQuery, ByToAndFrom, CallQueryMarker};
 
 #[derive(Clone, Debug, Deserialize)]
 /// See [Call Properties](https://www.twilio.com/docs/voice/api/call-resource#call-properties)
@@ -539,15 +539,16 @@ impl TwilioEndpoint for FetchCall {
     type ResponseBody = CallResponse;
 
     fn path_params(&self) -> Vec<(&'static str, &str)> {
-        vec![("{AccountSid}", &self.account_sid), ("{CallSid}", &self.call_sid)]
+        vec![
+            ("{AccountSid}", &self.account_sid),
+            ("{CallSid}", &self.call_sid),
+        ]
     }
 
     async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
         Ok(resp.json().await?)
     }
 }
-
-
 
 impl ByToAndFrom for ListCalls {}
 impl CallQueryMarker for ListCalls {}
@@ -592,4 +593,117 @@ pub struct ListCallsResponse {
     pub calls: Vec<CallResponse>,
     #[serde(flatten)]
     pub pagination: Pagination,
+}
+
+#[derive(Clone, Debug)]
+pub struct UpdateCall {
+    pub account_sid: String,
+    pub call_sid: String,
+    pub body: UpdateCallBody,
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct UpdateCallBody {
+    pub params: HashMap<String, String>,
+}
+
+#[derive(Clone, Debug, Display)]
+#[strum(serialize_all = "lowercase")]
+pub enum UpdateCallStatus {
+    Canceled,
+    Completed,
+}
+
+impl UpdateCall {
+    pub fn new(
+        account_sid: impl Into<String>,
+        call_sid: impl Into<String>,
+        body: UpdateCallBody,
+    ) -> Self {
+        Self {
+            account_sid: account_sid.into(),
+            call_sid: call_sid.into(),
+            body,
+        }
+    }
+}
+
+impl UpdateCallBody {
+    pub fn with_status(mut self, status: UpdateCallStatus) -> Self {
+        self.params.insert(STATUS.to_string(), status.to_string());
+        self
+    }
+
+    pub fn with_twiml(mut self, twiml: impl Into<String>) -> Self {
+        self.params.insert(TWIML.to_string(), twiml.into());
+        self
+    }
+
+    pub fn with_url(mut self, url: impl Into<String>) -> Self {
+        self.params.insert(URL.to_string(), url.into());
+        self
+    }
+
+    pub fn with_method(mut self, method: impl Into<String>) -> Self {
+        self.params.insert(METHOD.to_string(), method.into());
+        self
+    }
+
+    pub fn with_fallback_url(mut self, fallback_url: impl Into<String>) -> Self {
+        self.params
+            .insert(FALLBACK_URL.to_string(), fallback_url.into());
+        self
+    }
+
+    pub fn with_fallback_method(mut self, fallback_method: impl Into<String>) -> Self {
+        self.params
+            .insert(FALLBACK_METHOD.to_string(), fallback_method.into());
+        self
+    }
+
+    pub fn with_status_callback(mut self, status_callback: impl Into<String>) -> Self {
+        self.params
+            .insert(STATUS_CALLBACK.to_string(), status_callback.into());
+        self
+    }
+
+    pub fn with_status_callback_method(
+        mut self,
+        status_callback_method: impl Into<String>,
+    ) -> Self {
+        self.params.insert(
+            STATUS_CALLBACK_METHOD.to_string(),
+            status_callback_method.into(),
+        );
+        self
+    }
+
+    pub fn with_time_limit(mut self, time_limit: u32) -> Self {
+        self.params
+            .insert(TIME_LIMIT.to_string(), time_limit.to_string());
+        self
+    }
+}
+
+impl TwilioEndpoint for UpdateCall {
+    const PATH: &'static str = "/2010-04-01/Accounts/{AccountSid}/Calls/{Sid}.json";
+
+    const METHOD: Method = Method::POST;
+
+    type ResponseBody = CallResponse;
+
+    fn path_params(&self) -> Vec<(&'static str, &str)> {
+        vec![
+            ("{AccountSid}", &self.account_sid),
+            ("{Sid}", &self.call_sid),
+        ]
+    }
+
+    fn request_body(&self) -> Result<RequestBody> {
+        Ok(RequestBody::Form(self.body.params.clone()))
+    }
+
+    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
+        Ok(resp.json().await?)
+    }
 }

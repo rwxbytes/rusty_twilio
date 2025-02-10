@@ -134,3 +134,4 @@ const BYOC_SID: &str = "ByocSid";
 const CALL_REASON: &str = "CallReason";
 const CALL_TOKEN: &str = "CallToken";
 const TIME_LIMIT: &str = "TimeLimit";
+const STATUS: &str = "Status";
