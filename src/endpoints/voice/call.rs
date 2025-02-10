@@ -3,6 +3,8 @@
 
 use super::*;
 use crate::endpoints::applications::ApiVersion;
+use std::string::ToString;
+use strum::Display;
 
 #[derive(Clone, Debug, Deserialize)]
 /// See [Call Properties](https://www.twilio.com/docs/voice/api/call-resource#call-properties)
@@ -172,6 +174,23 @@ impl From<TwilmlSrc> for HashMap<String, String> {
     }
 }
 
+#[derive(Clone, Debug, Display)]
+#[strum(serialize_all = "lowercase")]
+pub enum StatusCallbackEvent {
+    Initiated,
+    Ringing,
+    Answered,
+    Completed,
+}
+
+#[derive(Clone, Debug, Display)]
+#[strum(serialize_all = "kebab-case")]
+pub enum RecordingStatusCallbackEvent {
+    InProgress,
+    Completed,
+    Absent,
+}
+
 impl CreateCallBody {
     pub fn new(to: impl Into<String>, from: impl Into<String>, twilml_src: TwilmlSrc) -> Self {
         let mut params = HashMap::from(twilml_src);
@@ -218,10 +237,13 @@ impl CreateCallBody {
     /// Can be: initiated, ringing, answered, and completed.
     /// If no event is specified, we send the completed status.
     /// If you want to receive multiple events, specify each one in a separate status_callback_event parameter
-    pub fn with_status_callback_event(mut self, status_callback_event: impl Into<String>) -> Self {
+    pub fn with_status_callback_event(
+        mut self,
+        status_callback_event: StatusCallbackEvent,
+    ) -> Self {
         self.params.insert(
             STATUS_CALLBACK_EVENT.to_string(),
-            status_callback_event.into(),
+            status_callback_event.to_string(),
         );
         self
     }
@@ -272,11 +294,11 @@ impl CreateCallBody {
 
     pub fn with_recording_status_callback_event(
         mut self,
-        recording_status_callback_event: impl Into<String>,
+        recording_status_callback_event: RecordingStatusCallbackEvent,
     ) -> Self {
         self.params.insert(
             RECORDING_STATUS_CALLBACK_EVENT.to_string(),
-            recording_status_callback_event.into(),
+            recording_status_callback_event.to_string(),
         );
         self
     }
@@ -410,7 +432,9 @@ impl CreateCallBody {
 
 impl TwilioEndpoint for CreateCall {
     const PATH: &'static str = "/2010-04-01/Accounts/{AccountSid}/Calls.json";
+
     const METHOD: Method = Method::POST;
+
     type ResponseBody = CallResponse;
 
     fn path_params(&self) -> Vec<(&'static str, &str)> {
@@ -419,6 +443,99 @@ impl TwilioEndpoint for CreateCall {
 
     fn request_body(&self) -> Result<RequestBody> {
         Ok(RequestBody::Form(self.body.params.clone()))
+    }
+
+    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
+        Ok(resp.json().await?)
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct StatusCallbackParams {
+    pub call_sid: String,
+    pub account_sid: String,
+    pub call_status: CallStatus,
+    pub api_version: ApiVersion,
+    pub direction: String,
+    pub forwarded_from: Option<String>,
+    pub from: String,
+    pub to: String,
+    pub caller_name: Option<String>,
+    pub parent_call_sid: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct StatusCallbackEventParams {
+    pub call_status: CallStatus,
+    pub duration: Option<String>,
+    pub call_duration: Option<String>,
+    pub sip_response_code: Option<String>,
+    pub recording_url: Option<String>,
+    pub recording_sid: Option<String>,
+    pub recording_duration: Option<String>,
+    pub timestamps: Option<String>,
+    pub callback_source: Option<String>,
+    pub sequence_number: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct RecordingStatusCallbackParams {
+    pub account_sid: String,
+    pub call_sid: String,
+    pub recording_sid: String,
+    pub recording_url: String,
+    pub recording_status: RecordingStatus,
+    pub recording_duration: Option<String>,
+    //pub recording_channels: Option<RecordingChannels>,
+    pub recording_channels: Option<u32>,
+    pub recording_time: Option<String>,
+    pub recording_source: Option<String>,
+    pub recording_track: Option<RecordingTrack>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum RecordingStatus {
+    InProgress,
+    Completed,
+    Absent,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RecordingTrack {
+    Inbound,
+    Outbound,
+    Both,
+}
+
+#[derive(Clone, Debug)]
+pub struct FetchCall {
+    pub account_sid: String,
+    pub call_sid: String,
+}
+
+impl FetchCall {
+    pub fn new(account_sid: impl Into<String>, call_sid: impl Into<String>) -> Self {
+        Self {
+            account_sid: account_sid.into(),
+            call_sid: call_sid.into(),
+        }
+    }
+}
+
+impl TwilioEndpoint for FetchCall {
+    const PATH: &'static str = "/2010-04-01/Accounts/{AccountSid}/Calls/{CallSid}.json";
+
+    const METHOD: Method = Method::GET;
+
+    type ResponseBody = CallResponse;
+
+    fn path_params(&self) -> Vec<(&'static str, &str)> {
+        vec![("{AccountSid}", &self.account_sid), ("{CallSid}", &self.call_sid)]
     }
 
     async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
