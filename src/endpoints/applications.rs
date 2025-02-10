@@ -5,6 +5,8 @@ use super::*;
 use std::collections::HashMap;
 use std::string::ToString;
 use strum::Display;
+use crate::TwilioQuery;
+use crate::url::query::ByFriendlyName;
 
 #[derive(Clone, Debug, Deserialize)]
 /// See [Application Properties](https://www.twilio.com/docs/usage/api/applications#application-properties)
@@ -241,6 +243,8 @@ impl TwilioEndpoint for FetchApplication {
     }
 }
 
+impl ByFriendlyName for ListApplications {}
+
 #[derive(Clone, Debug)]
 pub struct ListApplications {
     pub account_sid: String,
@@ -279,14 +283,8 @@ impl TwilioEndpoint for ListApplications {
 #[derive(Clone, Debug, Deserialize)]
 pub struct ListApplicationsResponse {
     pub applications: Vec<ApplicationResponse>,
-    pub first_page_uri: String,
-    pub end: usize,
-    pub next_page_uri: Option<String>,
-    pub page: usize,
-    pub page_size: usize,
-    pub previous_page_uri: Option<String>,
-    pub start: usize,
-    pub uri: String,
+    #[serde(flatten)]
+    pub pagination: Pagination,
 }
 
 #[derive(Clone, Debug)]

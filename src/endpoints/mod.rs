@@ -5,7 +5,6 @@ pub mod voice;
 pub use crate::Result;
 use std::collections::HashMap;
 
-use crate::endpoints::accounts::Status;
 use reqwest::{Method, Response, Url};
 pub use serde::{Deserialize, Serialize};
 
@@ -17,7 +16,7 @@ pub enum RequestBody {
     Form(HashMap<String, String>),
 }
 
-type QueryValues = Vec<(&'static str, String)>;
+pub(crate) type QueryValues = Vec<(&'static str, String)>;
 
 #[derive(Clone, Debug, Default)]
 pub enum Region {
@@ -76,49 +75,16 @@ pub trait TwilioEndpoint {
     }
 }
 
-#[derive(Clone, Debug, Default)]
-pub struct TwilioQuery<T> {
-    params: QueryValues,
-    _marker: std::marker::PhantomData<T>,
-}
-
-impl<T> TwilioQuery<T> {
-    pub fn new() -> Self {
-        Self {
-            params: vec![],
-            _marker: std::marker::PhantomData,
-        }
-    }
-}
-
-impl<T> TwilioQuery<T> {
-    pub fn with_friendly_name(mut self, friendly_name: impl Into<String>) -> Self {
-        self.params.push(("FriendlyName", friendly_name.into()));
-        self
-    }
-
-    pub fn with_page_size(mut self, page_size: u32) -> Self {
-        self.params.push(("PageSize", page_size.to_string()));
-        self
-    }
-
-    pub fn with_page(mut self, page: u32) -> Self {
-        self.params.push(("Page", page.to_string()));
-        self
-    }
-
-    pub fn with_page_token(mut self, page_token: impl Into<String>) -> Self {
-        self.params.push(("PageToken", page_token.into()));
-        self
-    }
-}
-
-trait AccountQueryMarker {}
-impl<T: AccountQueryMarker> TwilioQuery<T> {
-    pub fn with_status(mut self, status: Status) -> Self {
-        self.params.push(("Status", status.to_string()));
-        self
-    }
+#[derive(Clone, Debug, Deserialize)]
+pub struct Pagination {
+    pub page: usize,
+    pub page_size: usize,
+    pub first_page_uri: String,
+    pub end: usize,
+    pub start: usize,
+    pub uri: String,
+    pub next_page_uri: Option<String>,
+    pub previous_page_uri: Option<String>,
 }
 
 const API_VERSION: &str = "ApiVersion";

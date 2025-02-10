@@ -3,6 +3,7 @@
 use super::*;
 use std::string::ToString;
 use strum::Display;
+use crate::url::query::{TwilioQuery, AccountQueryMarker, ByFriendlyName};
 
 #[derive(Clone, Debug, Deserialize)]
 /// See [Account Properties](https://www.twilio.com/docs/iam/api/account#account-properties)
@@ -101,6 +102,8 @@ impl TwilioEndpoint for FetchAccount {
     }
 }
 
+impl ByFriendlyName for ListAccounts {}
+
 impl AccountQueryMarker for ListAccounts {}
 
 #[derive(Clone, Debug)]
@@ -131,13 +134,8 @@ impl TwilioEndpoint for ListAccounts {
 #[derive(Clone, Debug, Deserialize)]
 pub struct ListAccountsResponse {
     pub accounts: Vec<AccountResponse>,
-    pub end: u32,
-    pub next_page_uri: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
-    pub previous_page_uri: Option<String>,
-    pub start: u32,
-    pub uri: String,
+    #[serde(flatten)]
+    pub pagination: Pagination,
 }
 
 #[derive(Clone, Debug)]
