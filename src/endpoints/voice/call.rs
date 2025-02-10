@@ -707,3 +707,37 @@ impl TwilioEndpoint for UpdateCall {
         Ok(resp.json().await?)
     }
 }
+
+#[derive(Clone, Debug)]
+pub struct DeleteCall {
+    pub account_sid: String,
+    pub call_sid: String,
+}
+
+impl DeleteCall {
+    pub fn new(account_sid: impl Into<String>, call_sid: impl Into<String>) -> Self {
+        Self {
+            account_sid: account_sid.into(),
+            call_sid: call_sid.into(),
+        }
+    }
+}
+
+impl TwilioEndpoint for DeleteCall {
+    const PATH: &'static str = "/2010-04-01/Accounts/{AccountSid}/Calls/{Sid}.json";
+
+    const METHOD: Method = Method::DELETE;
+
+    type ResponseBody = ();
+
+    fn path_params(&self) -> Vec<(&'static str, &str)> {
+        vec![
+            ("{AccountSid}", &self.account_sid),
+            ("{Sid}", &self.call_sid),
+        ]
+    }
+
+    async fn response_body(self, _resp: Response) -> Result<Self::ResponseBody> {
+        Ok(())
+    }
+}
