@@ -5,6 +5,7 @@ use super::*;
 use crate::endpoints::applications::ApiVersion;
 use std::string::ToString;
 use strum::Display;
+use crate::url::query::{TwilioQuery, ByToAndFrom, CallQueryMarker};
 
 #[derive(Clone, Debug, Deserialize)]
 /// See [Call Properties](https://www.twilio.com/docs/voice/api/call-resource#call-properties)
@@ -68,7 +69,7 @@ pub struct CallResponse {
     pub direction: Option<String>,
     /// Either human or machine if this call was initiated with answering machine detection.
     /// Empty otherwise.
-    pub answered_by: Option<AnsweredBy>,
+    pub answered_by: Option<String>,
     /// The API version used to create the call.
     pub api_version: Option<ApiVersion>,
     /// The forwarding phone number if this call was an incoming call forwarded from another
@@ -94,9 +95,10 @@ pub struct CallResponse {
     pub annotation: Option<String>,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Display)]
 /// See [Call Status](https://www.twilio.com/docs/voice/api/call-resource#call-status-values)
 #[serde(rename_all = "kebab-case")]
+#[strum(serialize_all = "kebab-case")]
 pub enum CallStatus {
     Queued,
     Ringing,
@@ -109,10 +111,12 @@ pub enum CallStatus {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
 pub enum AnsweredBy {
     Human,
     Machine,
+    MachineStart,
+    Unknown,
 }
 
 #[derive(Clone, Debug)]
@@ -541,4 +545,51 @@ impl TwilioEndpoint for FetchCall {
     async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
         Ok(resp.json().await?)
     }
+}
+
+
+
+impl ByToAndFrom for ListCalls {}
+impl CallQueryMarker for ListCalls {}
+
+#[derive(Clone, Debug)]
+pub struct ListCalls {
+    pub account_sid: String,
+    pub query: TwilioQuery<Self>,
+}
+
+impl ListCalls {
+    pub fn new(account_sid: impl Into<String>, query: TwilioQuery<Self>) -> Self {
+        Self {
+            account_sid: account_sid.into(),
+            query,
+        }
+    }
+}
+
+impl TwilioEndpoint for ListCalls {
+    const PATH: &'static str = "/2010-04-01/Accounts/{AccountSid}/Calls.json";
+
+    const METHOD: Method = Method::GET;
+
+    type ResponseBody = ListCallsResponse;
+
+    fn query_params(&self) -> Option<QueryValues> {
+        Some(self.query.params.clone())
+    }
+
+    fn path_params(&self) -> Vec<(&'static str, &str)> {
+        vec![("{AccountSid}", &self.account_sid)]
+    }
+
+    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
+        Ok(resp.json().await?)
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct ListCallsResponse {
+    pub calls: Vec<CallResponse>,
+    #[serde(flatten)]
+    pub pagination: Pagination,
 }
