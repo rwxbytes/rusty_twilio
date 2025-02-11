@@ -1,5 +1,6 @@
 //! Stream endpoints
 //! See [Twilio Stream API](https://www.twilio.com/docs/voice/api/stream-resource)
+
 use super::*;
 
 #[derive(Clone, Debug, Deserialize)]
@@ -169,5 +170,177 @@ impl TwilioEndpoint for UpdateStream {
 
     async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
         Ok(resp.json().await?)
+    }
+}
+
+/// See [Websocket Messages From Twilio](https://www.twilio.com/docs/voice/media-streams/websocket-messages#websocket-messages-from-twilio)
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum TwilioMessage {
+    Connected(ConnectedMessage),
+    Start(StartMessage),
+    Media(MediaMessage),
+    Mark(MarkMessage),
+    Stop(StopMessage),
+    Dtmf(DtmfMessage),
+}
+
+impl TryFrom<&str> for TwilioMessage {
+    type Error = serde_json::Error;
+
+    fn try_from(value: &str) -> Result<Self> {
+        Ok(serde_json::from_str(value)?)
+    }
+}
+
+/// See [Connected Message](https://www.twilio.com/docs/voice/media-streams/websocket-messages#connected-message)
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ConnectedMessage {
+    pub event: String,
+    pub protocol: String,
+    pub version: String,
+}
+
+/// See [Start Message](https://www.twilio.com/docs/voice/media-streams/websocket-messages#start-message)
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct StartMessage {
+    pub event: String,
+    pub sequence_number: String,
+    pub start: StartMetadata,
+    pub stream_sid: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct StartMetadata {
+    pub stream_sid: String,
+    pub account_sid: String,
+    pub call_sid: String,
+    pub tracks: Vec<Track>,
+    #[serde(flatten)]
+    pub custom_parameters: HashMap<String, String>,
+    pub media_format: MediaFormat,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaFormat {
+    pub encoding: String,
+    pub sample_rate: u32,
+    pub channels: u32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum Track {
+    #[serde(rename = "inbound")]
+    Inbound,
+    #[serde(rename = "outbound")]
+    Outbound,
+}
+
+/// See [Media Message](https://www.twilio.com/docs/voice/media-streams/websocket-messages#media-message)
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaMessage {
+    pub event: String,
+    pub stream_sid: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sequence_number: Option<String>,
+    pub media: Media,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Media {
+    pub payload: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub track: Option<Track>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub chunk: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub timestamp: Option<String>,
+}
+
+impl MediaMessage {
+    pub fn new(stream_sid: impl Into<String>, payload: impl Into<String>) -> Self {
+        MediaMessage {
+            event: "media".to_string(),
+            stream_sid: stream_sid.into(),
+            sequence_number: None,
+            media: Media {
+                payload: payload.into(),
+                ..Default::default()
+            },
+        }
+    }
+}
+
+/// See [Stop Message](https://www.twilio.com/docs/voice/media-streams/websocket-messages#stop-message)
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct StopMessage {
+    pub event: String,
+    pub stream_sid: String,
+    pub sequence_number: String,
+    pub stop: Stop,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Stop {
+    pub account_sid: String,
+    pub call_sid: String,
+}
+
+/// See [DTMF Message](https://www.twilio.com/docs/voice/media-streams/websocket-messages#dtmf-message)
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct DtmfMessage {
+    pub event: String,
+    pub stream_sid: String,
+    pub sequence_number: String,
+    pub dtmf: Dtmf,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Dtmf {
+    pub digit: String,
+    pub track: String,
+}
+
+/// See [Mark Message](https://www.twilio.com/docs/voice/media-streams/websocket-messages#mark-message)
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct MarkMessage {
+    pub event: String,
+    pub stream_sid: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sequence_number: Option<String>,
+    pub mark: Mark,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Mark {
+    pub name: String,
+}
+
+/// [Sending Clear Messages](https://www.twilio.com/docs/voice/media-streams/websocket-messages#send-a-clear-message)
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ClearMessage {
+    pub event: String,
+    pub stream_sid: String,
+}
+
+impl ClearMessage {
+    fn new(sid: &str) -> Self {
+        ClearMessage {
+            event: "clear".to_string(),
+            stream_sid: sid.to_string(),
+        }
     }
 }
