@@ -337,7 +337,7 @@ pub struct ClearMessage {
 }
 
 impl ClearMessage {
-    fn new(sid: &str) -> Self {
+    pub fn new(sid: &str) -> Self {
         ClearMessage {
             event: "clear".to_string(),
             stream_sid: sid.to_string(),
