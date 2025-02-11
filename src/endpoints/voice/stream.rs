@@ -220,8 +220,7 @@ pub struct StartMetadata {
     pub account_sid: String,
     pub call_sid: String,
     pub tracks: Vec<Track>,
-    #[serde(flatten)]
-    pub custom_parameters: HashMap<String, String>,
+    pub custom_parameters: serde_json::Value,
     pub media_format: MediaFormat,
 }
 
