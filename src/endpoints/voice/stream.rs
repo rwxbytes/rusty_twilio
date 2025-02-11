@@ -1,6 +1,7 @@
 //! Stream endpoints
 //! See [Twilio Stream API](https://www.twilio.com/docs/voice/api/stream-resource)
 
+use crate::error::TwilioError;
 use super::*;
 
 #[derive(Clone, Debug, Deserialize)]
@@ -186,7 +187,7 @@ pub enum TwilioMessage {
 }
 
 impl TryFrom<&str> for TwilioMessage {
-    type Error = serde_json::Error;
+    type Error = TwilioError;
 
     fn try_from(value: &str) -> Result<Self> {
         Ok(serde_json::from_str(value)?)
