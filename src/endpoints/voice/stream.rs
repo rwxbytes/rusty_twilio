@@ -251,7 +251,7 @@ pub struct MediaMessage {
     pub media: Media,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Media {
     pub payload: String,
