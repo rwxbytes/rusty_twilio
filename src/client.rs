@@ -6,7 +6,7 @@ use reqwest::Method;
 
 const APPLICATION_JSON: &str = "application/json";
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TwilioClient {
     inner: reqwest::Client,
     account_sid: String,
