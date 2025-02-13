@@ -493,7 +493,6 @@ pub struct RecordingStatusCallbackParams {
     pub recording_url: String,
     pub recording_status: RecordingStatus,
     pub recording_duration: Option<String>,
-    //pub recording_channels: Option<RecordingChannels>,
     pub recording_channels: Option<u32>,
     pub recording_time: Option<String>,
     pub recording_source: Option<String>,
