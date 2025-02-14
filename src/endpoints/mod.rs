@@ -3,7 +3,6 @@ pub mod applications;
 pub mod voice;
 
 pub use crate::Result;
-use std::collections::HashMap;
 
 use reqwest::{Method, Response, Url};
 pub use serde::{Deserialize, Serialize};
@@ -13,7 +12,7 @@ pub enum RequestBody {
     Empty,
     Json(serde_json::Value),
     Multipart(reqwest::multipart::Form),
-    Form(HashMap<String, String>),
+    Form(Vec<(&'static str, String)>),
 }
 
 pub(crate) type QueryValues = Vec<(&'static str, String)>;

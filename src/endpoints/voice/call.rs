@@ -127,7 +127,7 @@ pub struct CreateCall {
 
 #[derive(Clone, Debug, Default)]
 pub struct CreateCallBody {
-    pub params: HashMap<String, String>,
+    pub params: Vec<(&'static str, String)>,
 }
 
 impl CreateCall {
@@ -139,42 +139,72 @@ impl CreateCall {
     }
 }
 
+impl TwilioEndpoint for CreateCall {
+    const PATH: &'static str = "/2010-04-01/Accounts/{AccountSid}/Calls.json";
+
+    const METHOD: Method = Method::POST;
+
+    type ResponseBody = CallResponse;
+
+    fn path_params(&self) -> Vec<(&'static str, &str)> {
+        vec![("{AccountSid}", &self.account_sid)]
+    }
+
+    fn request_body(&self) -> Result<RequestBody> {
+        Ok(RequestBody::Form(self.body.params.clone()))
+    }
+
+    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
+        Ok(resp.json().await?)
+    }
+}
+
 #[derive(Clone, Debug)]
-pub enum TwilmlSrc {
+pub enum TwimlSrc {
     Url(String),
     Twiml(String),
     ApplicationSid(String),
 }
 
-impl TwilmlSrc {
+impl TwimlSrc {
     pub fn url(url: impl Into<String>) -> Self {
-        TwilmlSrc::Url(url.into())
+        TwimlSrc::Url(url.into())
     }
 
     pub fn twiml(twiml: impl Into<String>) -> Self {
-        TwilmlSrc::Twiml(twiml.into())
+        TwimlSrc::Twiml(twiml.into())
     }
 
     pub fn application_sid(application_sid: impl Into<String>) -> Self {
-        TwilmlSrc::ApplicationSid(application_sid.into())
+        TwimlSrc::ApplicationSid(application_sid.into())
+    }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            TwimlSrc::Url(url) => url.clone(),
+            TwimlSrc::Twiml(twiml) => twiml.clone(),
+            TwimlSrc::ApplicationSid(application_sid) => application_sid.clone(),
+        }
     }
 }
 
-impl From<TwilmlSrc> for HashMap<String, String> {
-    fn from(src: TwilmlSrc) -> Self {
-        let mut params = HashMap::new();
-        match src {
-            TwilmlSrc::Url(url) => {
-                params.insert(URL.to_string(), url);
-            }
-            TwilmlSrc::Twiml(twiml) => {
-                params.insert(TWIML.to_string(), twiml);
-            }
-            TwilmlSrc::ApplicationSid(application_sid) => {
-                params.insert(APPLICATION_SID.to_string(), application_sid);
-            }
+impl AsRef<str> for TwimlSrc {
+    fn as_ref(&self) -> &str {
+        match self {
+            TwimlSrc::Url(s) => s.as_ref(),
+            TwimlSrc::Twiml(s) => s.as_ref(),
+            TwimlSrc::ApplicationSid(s) => s.as_ref(),
         }
-        params
+    }
+}
+
+impl From<TwimlSrc> for (&'static str, String) {
+    fn from(src: TwimlSrc) -> Self {
+        match src {
+            TwimlSrc::Url(url) => (URL, url),
+            TwimlSrc::Twiml(twiml) => (TWIML, twiml),
+            TwimlSrc::ApplicationSid(sid) => (APPLICATION_SID, sid),
+        }
     }
 }
 
@@ -196,33 +226,31 @@ pub enum RecordingStatusCallbackEvent {
 }
 
 impl CreateCallBody {
-    pub fn new(to: impl Into<String>, from: impl Into<String>, twilml_src: TwilmlSrc) -> Self {
-        let mut params = HashMap::from(twilml_src);
-        params.insert(TO.to_string(), to.into());
-        params.insert(FROM.to_string(), from.into());
+    pub fn new(to: impl Into<String>, from: impl Into<String>, twilml_src: TwimlSrc) -> Self {
+        let mut params = Vec::new();
+        params.push((TO, to.into()));
+        params.push((FROM, from.into()));
+        params.push(twilml_src.into());
         Self { params }
     }
 
     pub fn with_method(mut self, method: impl Into<String>) -> Self {
-        self.params.insert(METHOD.to_string(), method.into());
+        self.params.push((METHOD, method.into()));
         self
     }
 
     pub fn with_fallback_url(mut self, fallback_url: impl Into<String>) -> Self {
-        self.params
-            .insert(FALLBACK_URL.to_string(), fallback_url.into());
+        self.params.push((FALLBACK_URL, fallback_url.into()));
         self
     }
 
     pub fn with_fallback_method(mut self, fallback_method: impl Into<String>) -> Self {
-        self.params
-            .insert(FALLBACK_METHOD.to_string(), fallback_method.into());
+        self.params.push((FALLBACK_METHOD, fallback_method.into()));
         self
     }
 
     pub fn with_status_callback(mut self, status_callback: impl Into<String>) -> Self {
-        self.params
-            .insert(STATUS_CALLBACK.to_string(), status_callback.into());
+        self.params.push((STATUS_CALLBACK, status_callback.into()));
         self
     }
 
@@ -230,10 +258,8 @@ impl CreateCallBody {
         mut self,
         status_callback_method: impl Into<String>,
     ) -> Self {
-        self.params.insert(
-            STATUS_CALLBACK_METHOD.to_string(),
-            status_callback_method.into(),
-        );
+        self.params
+            .push((STATUS_CALLBACK_METHOD, status_callback_method.into()));
         self
     }
 
@@ -245,32 +271,29 @@ impl CreateCallBody {
         mut self,
         status_callback_event: StatusCallbackEvent,
     ) -> Self {
-        self.params.insert(
-            STATUS_CALLBACK_EVENT.to_string(),
-            status_callback_event.to_string(),
-        );
+        self.params
+            .push((STATUS_CALLBACK_EVENT, status_callback_event.to_string()));
         self
     }
 
     pub fn with_send_digits(mut self, send_digits: impl Into<String>) -> Self {
-        self.params
-            .insert(SEND_DIGITS.to_string(), send_digits.into());
+        self.params.push((SEND_DIGITS, send_digits.into()));
         self
     }
 
     pub fn with_timeout(mut self, timeout: u32) -> Self {
-        self.params.insert(TIMEOUT.to_string(), timeout.to_string());
+        self.params.push((TIMEOUT, timeout.to_string()));
         self
     }
 
     pub fn with_record(mut self, record: bool) -> Self {
-        self.params.insert(RECORD.to_string(), record.to_string());
+        self.params.push((RECORD, record.to_string()));
         self
     }
 
     pub fn with_recording_channels(mut self, recording_channels: impl Into<String>) -> Self {
         self.params
-            .insert(RECORDING_CHANNELS.to_string(), recording_channels.into());
+            .push((RECORDING_CHANNELS, recording_channels.into()));
         self
     }
 
@@ -278,10 +301,8 @@ impl CreateCallBody {
         mut self,
         recording_status_callback: impl Into<String>,
     ) -> Self {
-        self.params.insert(
-            RECORDING_STATUS_CALLBACK.to_string(),
-            recording_status_callback.into(),
-        );
+        self.params
+            .push((RECORDING_STATUS_CALLBACK, recording_status_callback.into()));
         self
     }
 
@@ -289,10 +310,10 @@ impl CreateCallBody {
         mut self,
         recording_status_callback_method: impl Into<String>,
     ) -> Self {
-        self.params.insert(
-            RECORDING_STATUS_CALLBACK_METHOD.to_string(),
+        self.params.push((
+            RECORDING_STATUS_CALLBACK_METHOD,
             recording_status_callback_method.into(),
-        );
+        ));
         self
     }
 
@@ -300,42 +321,41 @@ impl CreateCallBody {
         mut self,
         recording_status_callback_event: RecordingStatusCallbackEvent,
     ) -> Self {
-        self.params.insert(
-            RECORDING_STATUS_CALLBACK_EVENT.to_string(),
+        self.params.push((
+            RECORDING_STATUS_CALLBACK_EVENT,
             recording_status_callback_event.to_string(),
-        );
+        ));
         self
     }
 
     pub fn with_recording_track(mut self, recording_track: impl Into<String>) -> Self {
-        self.params
-            .insert(RECORDING_TRACK.to_string(), recording_track.into());
+        self.params.push((RECORDING_TRACK, recording_track.into()));
         self
     }
 
     pub fn with_sip_auth_username(mut self, sip_auth_username: impl Into<String>) -> Self {
         self.params
-            .insert(SIP_AUTH_USERNAME.to_string(), sip_auth_username.into());
+            .push((SIP_AUTH_USERNAME, sip_auth_username.into()));
         self
     }
 
     pub fn with_sip_auth_password(mut self, sip_auth_password: impl Into<String>) -> Self {
         self.params
-            .insert(SIP_AUTH_PASSWORD.to_string(), sip_auth_password.into());
+            .push((SIP_AUTH_PASSWORD, sip_auth_password.into()));
         self
     }
 
     pub fn with_machine_detection(mut self, machine_detection: impl Into<String>) -> Self {
         self.params
-            .insert(MACHINE_DETECTION.to_string(), machine_detection.into());
+            .push((MACHINE_DETECTION, machine_detection.into()));
         self
     }
 
     pub fn with_machine_detection_timeout(mut self, machine_detection_timeout: u32) -> Self {
-        self.params.insert(
-            MACHINE_DETECTION_TIMEOUT.to_string(),
+        self.params.push((
+            MACHINE_DETECTION_TIMEOUT,
             machine_detection_timeout.to_string(),
-        );
+        ));
         self
     }
 
@@ -343,10 +363,10 @@ impl CreateCallBody {
         mut self,
         machine_detection_speech_threshold: f32,
     ) -> Self {
-        self.params.insert(
-            MACHINE_DETECTION_SPEECH_THRESHOLD.to_string(),
+        self.params.push((
+            MACHINE_DETECTION_SPEECH_THRESHOLD,
             machine_detection_speech_threshold.to_string(),
-        );
+        ));
         self
     }
 
@@ -354,10 +374,10 @@ impl CreateCallBody {
         mut self,
         machine_detection_speech_end_threshold: f32,
     ) -> Self {
-        self.params.insert(
-            MACHINE_DETECTION_SPEECH_END_THRESHOLD.to_string(),
+        self.params.push((
+            MACHINE_DETECTION_SPEECH_END_THRESHOLD,
             machine_detection_speech_end_threshold.to_string(),
-        );
+        ));
         self
     }
 
@@ -365,26 +385,25 @@ impl CreateCallBody {
         mut self,
         machine_detection_silence_timeout: u32,
     ) -> Self {
-        self.params.insert(
-            MACHINE_DETECTION_SILENCE_TIMEOUT.to_string(),
+        self.params.push((
+            MACHINE_DETECTION_SILENCE_TIMEOUT,
             machine_detection_silence_timeout.to_string(),
-        );
+        ));
         self
     }
 
     pub fn with_trim(mut self, trim: impl Into<String>) -> Self {
-        self.params.insert(TRIM.to_string(), trim.into());
+        self.params.push((TRIM, trim.into()));
         self
     }
 
     pub fn with_caller_id(mut self, caller_id: impl Into<String>) -> Self {
-        self.params.insert(CALLER_ID.to_string(), caller_id.into());
+        self.params.push((CALLER_ID, caller_id.into()));
         self
     }
 
     pub fn with_async_amd(mut self, async_amd: bool) -> Self {
-        self.params
-            .insert(ASYNC_AMD.to_string(), async_amd.to_string());
+        self.params.push((ASYNC_AMD, async_amd.to_string()));
         self
     }
 
@@ -392,10 +411,8 @@ impl CreateCallBody {
         mut self,
         async_amd_status_callback: impl Into<String>,
     ) -> Self {
-        self.params.insert(
-            ASYNC_AMD_STATUS_CALLBACK.to_string(),
-            async_amd_status_callback.into(),
-        );
+        self.params
+            .push((ASYNC_AMD_STATUS_CALLBACK, async_amd_status_callback.into()));
         self
     }
 
@@ -403,54 +420,31 @@ impl CreateCallBody {
         mut self,
         async_amd_status_callback_method: impl Into<String>,
     ) -> Self {
-        self.params.insert(
-            ASYNC_AMD_STATUS_CALLBACK_METHOD.to_string(),
+        self.params.push((
+            ASYNC_AMD_STATUS_CALLBACK_METHOD,
             async_amd_status_callback_method.into(),
-        );
+        ));
         self
     }
 
     pub fn with_byoc_sid(mut self, byoc_sid: impl Into<String>) -> Self {
-        self.params.insert(BYOC_SID.to_string(), byoc_sid.into());
+        self.params.push((BYOC_SID, byoc_sid.into()));
         self
     }
 
     pub fn with_call_reason(mut self, call_reason: impl Into<String>) -> Self {
-        self.params
-            .insert(CALL_REASON.to_string(), call_reason.into());
+        self.params.push((CALL_REASON, call_reason.into()));
         self
     }
 
     pub fn with_call_token(mut self, call_token: impl Into<String>) -> Self {
-        self.params
-            .insert(CALL_TOKEN.to_string(), call_token.into());
+        self.params.push((CALL_TOKEN, call_token.into()));
         self
     }
 
     pub fn with_time_limit(mut self, time_limit: u32) -> Self {
-        self.params
-            .insert(TIME_LIMIT.to_string(), time_limit.to_string());
+        self.params.push((TIME_LIMIT, time_limit.to_string()));
         self
-    }
-}
-
-impl TwilioEndpoint for CreateCall {
-    const PATH: &'static str = "/2010-04-01/Accounts/{AccountSid}/Calls.json";
-
-    const METHOD: Method = Method::POST;
-
-    type ResponseBody = CallResponse;
-
-    fn path_params(&self) -> Vec<(&'static str, &str)> {
-        vec![("{AccountSid}", &self.account_sid)]
-    }
-
-    fn request_body(&self) -> Result<RequestBody> {
-        Ok(RequestBody::Form(self.body.params.clone()))
-    }
-
-    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
-        Ok(resp.json().await?)
     }
 }
 
@@ -603,7 +597,7 @@ pub struct UpdateCall {
 
 #[derive(Clone, Debug, Default)]
 pub struct UpdateCallBody {
-    pub params: HashMap<String, String>,
+    pub params: Vec<(&'static str, String)>,
 }
 
 #[derive(Clone, Debug, Display)]
@@ -627,42 +621,40 @@ impl UpdateCall {
     }
 }
 
+// TODO: share methods
 impl UpdateCallBody {
     pub fn with_status(mut self, status: UpdateCallStatus) -> Self {
-        self.params.insert(STATUS.to_string(), status.to_string());
+        self.params.push((STATUS, status.to_string()));
         self
     }
 
     pub fn with_twiml(mut self, twiml: impl Into<String>) -> Self {
-        self.params.insert(TWIML.to_string(), twiml.into());
+        self.params.push((TWIML, twiml.into()));
         self
     }
 
     pub fn with_url(mut self, url: impl Into<String>) -> Self {
-        self.params.insert(URL.to_string(), url.into());
+        self.params.push((URL, url.into()));
         self
     }
 
     pub fn with_method(mut self, method: impl Into<String>) -> Self {
-        self.params.insert(METHOD.to_string(), method.into());
+        self.params.push((METHOD, method.into()));
         self
     }
 
     pub fn with_fallback_url(mut self, fallback_url: impl Into<String>) -> Self {
-        self.params
-            .insert(FALLBACK_URL.to_string(), fallback_url.into());
+        self.params.push((FALLBACK_URL, fallback_url.into()));
         self
     }
 
     pub fn with_fallback_method(mut self, fallback_method: impl Into<String>) -> Self {
-        self.params
-            .insert(FALLBACK_METHOD.to_string(), fallback_method.into());
+        self.params.push((FALLBACK_METHOD, fallback_method.into()));
         self
     }
 
     pub fn with_status_callback(mut self, status_callback: impl Into<String>) -> Self {
-        self.params
-            .insert(STATUS_CALLBACK.to_string(), status_callback.into());
+        self.params.push((STATUS_CALLBACK, status_callback.into()));
         self
     }
 
@@ -670,16 +662,13 @@ impl UpdateCallBody {
         mut self,
         status_callback_method: impl Into<String>,
     ) -> Self {
-        self.params.insert(
-            STATUS_CALLBACK_METHOD.to_string(),
-            status_callback_method.into(),
-        );
+        self.params
+            .push((STATUS_CALLBACK_METHOD, status_callback_method.into()));
         self
     }
 
     pub fn with_time_limit(mut self, time_limit: u32) -> Self {
-        self.params
-            .insert(TIME_LIMIT.to_string(), time_limit.to_string());
+        self.params.push((TIME_LIMIT, time_limit.to_string()));
         self
     }
 }

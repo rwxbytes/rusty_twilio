@@ -35,7 +35,7 @@ impl<T> TwilioQuery<T> {
     }
 }
 
-pub(crate) trait ByFriendlyName {}
+pub trait ByFriendlyName {}
 
 impl<T: ByFriendlyName> TwilioQuery<T> {
     pub fn with_friendly_name(mut self, friendly_name: impl Into<String>) -> Self {
@@ -45,7 +45,7 @@ impl<T: ByFriendlyName> TwilioQuery<T> {
 }
 
 
-pub(crate) trait AccountQueryMarker {}
+pub trait AccountQueryMarker {}
 impl<T: AccountQueryMarker> TwilioQuery<T> {
     pub fn with_status(mut self, status: Status) -> Self {
         self.params.push(("Status", status.to_string()));
@@ -53,7 +53,7 @@ impl<T: AccountQueryMarker> TwilioQuery<T> {
     }
 }
 
-pub(crate) trait ByToAndFrom {}
+pub trait ByToAndFrom {}
 
 impl<T: ByToAndFrom> TwilioQuery<T> {
     pub fn with_to(mut self, to: impl Into<String>) -> Self {
@@ -67,7 +67,7 @@ impl<T: ByToAndFrom> TwilioQuery<T> {
     }
 }
 
-pub(crate) trait CallQueryMarker {}
+pub trait CallQueryMarker {}
 
 impl<T: CallQueryMarker> TwilioQuery<T> {
     pub fn with_parent_call_sid(mut self, parent_call_sid: impl Into<String>) -> Self {

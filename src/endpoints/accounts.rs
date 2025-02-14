@@ -1,9 +1,9 @@
 //! Accounts endpoints
 //! See [Twilio Accounts API](https://www.twilio.com/docs/iam/api/account)
 use super::*;
+use crate::url::query::{AccountQueryMarker, ByFriendlyName, TwilioQuery};
 use std::string::ToString;
 use strum::Display;
-use crate::url::query::{TwilioQuery, AccountQueryMarker, ByFriendlyName};
 
 #[derive(Clone, Debug, Deserialize)]
 /// See [Account Properties](https://www.twilio.com/docs/iam/api/account#account-properties)
@@ -49,8 +49,6 @@ pub struct CreateAccount {
     pub friendly_name: String,
 }
 
-
-
 impl CreateAccount {
     pub fn new(friendly_name: impl Into<String>) -> Self {
         Self {
@@ -61,12 +59,13 @@ impl CreateAccount {
 
 impl TwilioEndpoint for CreateAccount {
     const PATH: &'static str = "2010-04-01/Accounts.json";
+
     const METHOD: Method = Method::POST;
+
     type ResponseBody = AccountResponse;
 
     fn request_body(&self) -> Result<RequestBody> {
-        let mut form = HashMap::new();
-        form.insert("FriendlyName".to_string(), self.friendly_name.clone());
+        let form = vec![(FRIENDLY_NAME, self.friendly_name.clone())];
         Ok(RequestBody::Form(form))
     }
 
@@ -90,7 +89,9 @@ impl FetchAccount {
 
 impl TwilioEndpoint for FetchAccount {
     const PATH: &'static str = "2010-04-01/Accounts/{Sid}.json";
+
     const METHOD: Method = Method::GET;
+
     type ResponseBody = AccountResponse;
 
     fn path_params(&self) -> Vec<(&'static str, &str)> {
@@ -119,7 +120,9 @@ impl ListAccounts {
 
 impl TwilioEndpoint for ListAccounts {
     const PATH: &'static str = "2010-04-01/Accounts.json";
+
     const METHOD: Method = Method::GET;
+
     type ResponseBody = ListAccountsResponse;
 
     fn query_params(&self) -> Option<QueryValues> {
@@ -155,25 +158,26 @@ impl UpdateAccount {
 
 #[derive(Clone, Debug, Default)]
 pub struct UpdateAccountBody {
-    pub params: HashMap<String, String>,
+    pub params: Vec<(&'static str, String)>,
 }
 
 impl UpdateAccountBody {
     pub fn with_friendly_name(mut self, friendly_name: impl Into<String>) -> Self {
-        self.params
-            .insert("FriendlyName".to_string(), friendly_name.into());
+        self.params.push((FRIENDLY_NAME, friendly_name.into()));
         self
     }
 
     pub fn with_status(mut self, status: Status) -> Self {
-        self.params.insert("Status".to_string(), status.to_string());
+        self.params.push((STATUS, status.to_string()));
         self
     }
 }
 
 impl TwilioEndpoint for UpdateAccount {
     const PATH: &'static str = "2010-04-01/Accounts/{Sid}.json";
+
     const METHOD: Method = Method::POST;
+
     type ResponseBody = AccountResponse;
 
     fn path_params(&self) -> Vec<(&'static str, &str)> {

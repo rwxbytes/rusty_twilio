@@ -2,7 +2,6 @@
 //! See [Applications reference](https://www.twilio.com/docs/usage/api/applications)
 
 use super::*;
-use std::collections::HashMap;
 use std::string::ToString;
 use strum::Display;
 use crate::TwilioQuery;
@@ -82,107 +81,80 @@ impl CreateApplication {
 
 #[derive(Clone, Debug, Default)]
 pub struct CreateApplicationBody {
-    pub params: HashMap<String, String>,
+    pub params: Vec<(&'static str, String)>,
 }
 
 impl CreateApplicationBody {
 
     pub fn with_friendly_name(mut self, friendly_name: impl Into<String>) -> Self {
         self.params
-            .insert(FRIENDLY_NAME.to_string(), friendly_name.into());
+            .push((FRIENDLY_NAME, friendly_name.into()));
         self
     }
 
     pub fn with_api_version(mut self, api_version: ApiVersion) -> Self {
         self.params
-            .insert(API_VERSION.to_string(), api_version.to_string());
+            .push((API_VERSION, api_version.to_string()));
         self
     }
 
     pub fn with_voice_url(mut self, voice_url: impl Into<String>) -> Self {
-        self.params.insert(VOICE_URL.to_string(), voice_url.into());
+        self.params.push((VOICE_URL, voice_url.into()));
         self
     }
 
     pub fn with_voice_method(mut self, voice_method: impl Into<String>) -> Self {
-        self.params
-            .insert(VOICE_METHOD.to_string(), voice_method.into());
+        self.params.push((VOICE_METHOD, voice_method.into()));
         self
     }
 
     pub fn with_voice_fallback_url(mut self, voice_fallback_url: impl Into<String>) -> Self {
-        self.params
-            .insert(VOICE_FALLBACK_URL.to_string(), voice_fallback_url.into());
+        self.params.push((VOICE_FALLBACK_URL, voice_fallback_url.into()));
         self
     }
 
     pub fn with_voice_fallback_method(mut self, voice_fallback_method: impl Into<String>) -> Self {
-        self.params.insert(
-            VOICE_FALLBACK_METHOD.to_string(),
-            voice_fallback_method.into(),
-        );
+        self.params.push((VOICE_FALLBACK_METHOD, voice_fallback_method.into()));
         self
     }
 
     pub fn with_status_callback(mut self, status_callback: impl Into<String>) -> Self {
-        self.params
-            .insert(STATUS_CALLBACK.to_string(), status_callback.into());
+        self.params.push((STATUS_CALLBACK, status_callback.into()));
         self
     }
 
-    pub fn with_status_callback_method(
-        mut self,
-        status_callback_method: impl Into<String>,
-    ) -> Self {
-        self.params.insert(
-            STATUS_CALLBACK_METHOD.to_string(),
-            status_callback_method.into(),
-        );
+    pub fn with_status_callback_method(mut self, status_callback_method: impl Into<String>) -> Self {
+        self.params.push((STATUS_CALLBACK_METHOD, status_callback_method.into()));
         self
     }
 
     pub fn with_sms_url(mut self, sms_url: impl Into<String>) -> Self {
-        self.params.insert(SMS_URL.to_string(), sms_url.into());
+        self.params.push((SMS_URL, sms_url.into()));
         self
     }
 
     pub fn with_sms_method(mut self, sms_method: impl Into<String>) -> Self {
-        self.params
-            .insert(SMS_METHOD.to_string(), sms_method.into());
+        self.params.push((SMS_METHOD, sms_method.into()));
         self
     }
 
     pub fn with_sms_fallback_url(mut self, sms_fallback_url: impl Into<String>) -> Self {
-        self.params
-            .insert(SMS_FALLBACK_URL.to_string(), sms_fallback_url.into());
+        self.params.push((SMS_FALLBACK_URL, sms_fallback_url.into()));
         self
     }
 
     pub fn with_sms_fallback_method(mut self, sms_fallback_method: impl Into<String>) -> Self {
-        self.params
-            .insert(SMS_FALLBACK_METHOD.to_string(), sms_fallback_method.into());
+        self.params.push((SMS_FALLBACK_METHOD, sms_fallback_method.into()));
         self
     }
 
-    pub fn with_message_status_callback(
-        mut self,
-        message_status_callback: impl Into<String>,
-    ) -> Self {
-        self.params.insert(
-            MESSAGE_STATUS_CALLBACK.to_string(),
-            message_status_callback.into(),
-        );
+    pub fn with_message_status_callback(mut self, message_status_callback: impl Into<String>) -> Self {
+        self.params.push((MESSAGE_STATUS_CALLBACK, message_status_callback.into()));
         self
     }
 
-    pub fn with_public_application_connect_enabled(
-        mut self,
-        public_application_connect_enabled: bool,
-    ) -> Self {
-        self.params.insert(
-            PUBLIC_APPLICATION_CONNECT_ENABLED.to_string(),
-            public_application_connect_enabled.to_string(),
-        );
+    pub fn with_public_application_connect_enabled(mut self, public_application_connect_enabled: bool) -> Self {
+        self.params.push((PUBLIC_APPLICATION_CONNECT_ENABLED, public_application_connect_enabled.to_string()));
         self
     }
 }

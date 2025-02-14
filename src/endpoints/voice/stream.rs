@@ -1,8 +1,8 @@
 //! Stream endpoints
 //! See [Twilio Stream API](https://www.twilio.com/docs/voice/api/stream-resource)
 
-use crate::error::TwilioError;
 use super::*;
+use crate::error::TwilioError;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct StreamResponse {
@@ -38,7 +38,7 @@ pub struct CreateStream {
 
 #[derive(Clone, Debug)]
 pub struct CreateStreamBody {
-    pub params: HashMap<String, String>,
+    pub params: Vec<(&'static str, String)>,
 }
 
 impl CreateStream {
@@ -57,24 +57,23 @@ impl CreateStream {
 
 impl CreateStreamBody {
     pub fn new(url: String) -> Self {
-        let mut params = HashMap::new();
-        params.insert(URL.to_string(), url);
-        Self { params }
+        Self {
+            params: vec![(URL, url)],
+        }
     }
 
     pub fn with_name(mut self, name: impl Into<String>) -> Self {
-        self.params.insert(NAME.to_string(), name.into());
+        self.params.push((NAME, name.into()));
         self
     }
 
     pub fn with_track(mut self, track: impl Into<String>) -> Self {
-        self.params.insert(TRACK.to_string(), track.into());
+        self.params.push((TRACK, track.into()));
         self
     }
 
     pub fn with_status_callback(mut self, status_callback: impl Into<String>) -> Self {
-        self.params
-            .insert(STATUS_CALLBACK.to_string(), status_callback.into());
+        self.params.push((STATUS_CALLBACK, status_callback.into()));
         self
     }
 
@@ -82,20 +81,18 @@ impl CreateStreamBody {
         mut self,
         status_callback_method: impl Into<String>,
     ) -> Self {
-        self.params.insert(
-            STATUS_CALLBACK_METHOD.to_string(),
-            status_callback_method.into(),
-        );
+        self.params
+            .push((STATUS_CALLBACK_METHOD, status_callback_method.into()));
         self
     }
-
     /// See [Custom Parameters](https://www.twilio.com/docs/voice/api/stream-resource#custom-parameters)
+    // TODO: may need to change type again
     pub fn with_custom_parameter(
         mut self,
-        key: impl Into<String>,
+        key: &'static str,
         value: impl Into<String>,
     ) -> Self {
-        self.params.insert(key.into(), value.into());
+        self.params.push((key, value.into()));
         self
     }
 }
@@ -164,9 +161,7 @@ impl TwilioEndpoint for UpdateStream {
     }
 
     fn request_body(&self) -> Result<RequestBody> {
-        let mut form = HashMap::new();
-        form.insert(STATUS.to_string(), "stopped".to_string());
-        Ok(RequestBody::Form(form))
+        Ok(RequestBody::Form(vec![(STATUS, "stopped".to_string())]))
     }
 
     async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
