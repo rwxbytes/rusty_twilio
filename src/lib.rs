@@ -2,6 +2,7 @@ mod client;
 mod error;
 pub mod endpoints;
 pub mod url;
+pub mod twiml;
 
 pub use client::TwilioClient;
 pub use url::query::TwilioQuery;
