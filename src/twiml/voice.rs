@@ -293,6 +293,8 @@ mod test {
             .unwrap();
 
         let got = VoiceResponse::new().connect(stream).to_string().unwrap();
+
+        assert_eq!(got, want);
     }
 
     #[test]
