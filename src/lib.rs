@@ -1,5 +1,5 @@
 mod client;
-mod error;
+pub mod error;
 pub mod endpoints;
 pub mod url;
 pub mod twiml;
