@@ -14,4 +14,11 @@ pub enum TwilioError {
     Json(#[from] serde_json::Error),
     #[error("http error {0}")]
     Http(serde_json::Value),
+    #[error("invalid websocket url: {0}")]
+    InvalidWebSocketUrl(String),
+    #[error("XML writing error: {0}")]
+    Xml(#[from] xml::writer::Error),
+    #[error("UTF-8 encoding error: {0}")]
+    Utf8(#[from] std::string::FromUtf8Error),
+
 }
