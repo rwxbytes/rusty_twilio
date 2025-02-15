@@ -205,8 +205,6 @@ impl VoiceResponse {
                             let mut stream_element =
                                 XmlEvent::start_element("Stream").attr("url", &stream.url);
 
-
-
                             if let Some(name) = &stream.name {
                                 stream_element = stream_element.attr("name", name);
                             }
@@ -228,8 +226,6 @@ impl VoiceResponse {
                                     stream_element.attr("statusCallbackMethod", method);
                             }
 
-
-
                             writer.write(stream_element)?;
 
                             if let Some(parameters) = &stream.parameters {
@@ -242,7 +238,6 @@ impl VoiceResponse {
                                     writer.write(XmlEvent::end_element().name("Parameter"))?;
                                 }
                             }
-
 
                             writer.write(XmlEvent::end_element().name("Stream"))?;
                         }
@@ -312,10 +307,7 @@ mod test {
             .build()
             .unwrap();
 
-        let got = VoiceResponse::new()
-            .connect(stream)
-            .to_string()
-            .unwrap();
+        let got = VoiceResponse::new().connect(stream).to_string().unwrap();
 
         assert_eq!(got, want);
     }
