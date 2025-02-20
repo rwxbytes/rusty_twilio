@@ -1,4 +1,6 @@
 use crate::error::TwilioError;
+use http::header::CONTENT_TYPE;
+use http::{header::HeaderValue, Response};
 use serde::{Deserialize, Serialize};
 use std::io::Write;
 use url::Url;
@@ -179,6 +181,15 @@ impl VoiceResponse {
         self
     }
 
+    pub fn to_http_response(&self) -> Result<Response<String>, TwilioError> {
+        let body = self.to_string()?;
+        let mut response = Response::new(body.into());
+        response
+            .headers_mut()
+            .insert(CONTENT_TYPE, HeaderValue::from_static("application/xml"));
+        Ok(response)
+    }
+
     pub fn to_string(&self) -> Result<String, TwilioError> {
         let w = Vec::new();
         let mut writer = EventWriter::new(w);
@@ -312,5 +323,16 @@ mod test {
         let got = VoiceResponse::new().connect(stream).to_string().unwrap();
 
         assert_eq!(got, want);
+    }
+
+    #[test]
+    fn voice_response_is_turning_into_http_response() {
+        let want = r#"<?xml version="1.0" encoding="UTF-8"?><Response><Connect><Stream url="wss://test.com/connect" /></Connect></Response>"#;
+        let response = VoiceResponse::new()
+            .connect("wss://test.com/connect")
+            .to_http_response()
+            .unwrap();
+
+        assert_eq!(response.body(), want);
     }
 }
