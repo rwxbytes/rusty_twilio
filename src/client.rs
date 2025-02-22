@@ -13,6 +13,7 @@ pub struct TwilioClient {
     auth_token: String,
     main_api_key: Option<String>,
     main_api_key_secret: Option<String>,
+    number: Option<String>,
     region: Region,
 }
 
@@ -30,6 +31,7 @@ impl TwilioClient {
             auth_token: std::env::var("TWILIO_AUTH_TOKEN").map_err(|_| MissingAuthTokenEnvVar)?,
             main_api_key: std::env::var("TWILIO_MAIN_API_KEY").ok(),
             main_api_key_secret: std::env::var("TWILIO_MAIN_API_KEY_SECRET").ok(),
+            number: std::env::var("TWILIO_PHONE_NUMBER").ok(),
             region: Region::UnitedStates,
         })
     }
@@ -41,6 +43,7 @@ impl TwilioClient {
             auth_token: auth_token.into(),
             main_api_key: None,
             main_api_key_secret: None,
+            number: None,
             region: Region::UnitedStates,
         }
     }
@@ -72,6 +75,10 @@ impl TwilioClient {
         }
 
         endpoint.response_body(resp).await
+    }
+
+    pub fn number(&self) -> Option<&str> {
+        self.number.as_deref()
     }
 
     pub fn set_region(&mut self, region: Region) {
