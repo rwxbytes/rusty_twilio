@@ -8,6 +8,32 @@ use std::string::ToString;
 use strum::Display;
 
 #[derive(Clone, Debug, Deserialize)]
+/// See [Twilio's Request To Your Application](https://www.twilio.com/docs/voice/twiml#twilios-request-to-your-application)
+#[serde(rename_all = "PascalCase")]
+pub struct TwilioRequestParams {
+    pub call_sid: String,
+    pub account_sid: String,
+    pub from: String,
+    pub to: String,
+    pub call_status: CallStatus,
+    pub api_version: ApiVersion,
+    pub direction: String,
+    pub forwarded_from: Option<String>,
+    pub caller_name: Option<String>,
+    pub parent_call_sid: Option<String>,
+    pub call_token: Option<String>,
+    pub from_city: Option<String>,
+    pub from_state: Option<String>,
+    pub from_zip: Option<String>,
+    pub from_country: Option<String>,
+    pub to_city: Option<String>,
+    pub to_state: Option<String>,
+    pub to_zip: Option<String>,
+    pub to_country: Option<String>,
+    // TODO: SIP & other fields based on Twiml verbs
+}
+
+#[derive(Clone, Debug, Deserialize)]
 /// See [Call Properties](https://www.twilio.com/docs/voice/api/call-resource#call-properties)
 pub struct CallResponse {
     /// The unique string that we created to identify this Call resource.
