@@ -84,7 +84,7 @@ impl From<Stream> for Noun {
 }
 
 #[derive(Default)]
-pub struct StreamBuilder {
+pub struct StreamNounBuilder {
     url: Option<String>,
     name: Option<String>,
     track: Option<Track>,
@@ -93,7 +93,7 @@ pub struct StreamBuilder {
     parameters: Option<Vec<Parameter>>,
 }
 
-impl StreamBuilder {
+impl StreamNounBuilder {
     pub fn new() -> Self {
         Self::default()
     }
@@ -292,7 +292,7 @@ mod test {
     #[test]
     fn test_all_stream_attr() {
         let want = r#"<?xml version="1.0" encoding="UTF-8"?><Response><Connect><Stream url="wss://test.com/connect" name="test" track="inbound_track" statusCallback="https://test.com/callback" statusCallbackMethod="POST" /></Connect></Response>"#;
-        let stream = StreamBuilder::new()
+        let stream = StreamNounBuilder::new()
             .url("wss://test.com/connect")
             .unwrap()
             .name("test")
@@ -312,7 +312,7 @@ mod test {
     fn stream_noun_is_nesting_parameter_nouns() {
         let want = r#"<?xml version="1.0" encoding="UTF-8"?><Response><Connect><Stream url="wss://mystream.ngrok.io/example"><Parameter name="FirstName" value="Jane" /><Parameter name="LastName" value="Doe" /></Stream></Connect></Response>"#;
 
-        let stream = StreamBuilder::new()
+        let stream = StreamNounBuilder::new()
             .url("wss://mystream.ngrok.io/example")
             .unwrap()
             .parameter("FirstName", "Jane")
