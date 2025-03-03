@@ -8,6 +8,8 @@ pub enum TwilioError {
     MissingAccountSidEnvVar,
     #[error("TWILIO_AUTH_TOKEN not set")]
     MissingAuthTokenEnvVar,
+    #[error("TWILIO_PHONE_NUMBER not set")]
+    MissingPhoneNumberEnvVar,
     #[error("http error")]
     Request(#[from] reqwest::Error),
     #[error("json error")]
@@ -16,6 +18,8 @@ pub enum TwilioError {
     Http(serde_json::Value),
     #[error("invalid websocket url: {0}")]
     InvalidWebSocketUrl(String),
+    #[error("invalid callback url: {0}")]
+    InvalidCallbackUrl(String),
     #[error("XML writing error: {0}")]
     Xml(#[from] xml::writer::Error),
     #[error("UTF-8 encoding error: {0}")]
