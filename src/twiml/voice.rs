@@ -175,7 +175,7 @@ impl VoiceResponse {
         Self::default()
     }
 
-    pub fn connect(&mut self, noun: impl Into<Noun>) -> &mut Self {
+    pub fn connect(mut self, noun: impl Into<Noun>) -> Self {
         self.verbs.push(Verb::Connect(noun.into()));
         self
     }
@@ -195,6 +195,11 @@ impl VoiceResponse {
     }
 
     pub fn to_string(&self) -> Result<String, TwilioError> {
+        let bytes = self.to_bytes()?;
+        Ok(String::from_utf8(bytes)?)
+    }
+
+    pub fn to_bytes(&self) -> Result<Vec<u8>, TwilioError> {
         let w = Vec::new();
         let mut writer = EventWriter::new(w);
 
@@ -270,7 +275,7 @@ impl VoiceResponse {
         writer.write(XmlEvent::end_element().name("Response"))?;
 
         let buffer = writer.into_inner();
-        Ok(String::from_utf8(buffer)?)
+        Ok(buffer)
     }
 }
 
