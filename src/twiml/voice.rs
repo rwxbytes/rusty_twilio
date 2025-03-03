@@ -6,18 +6,19 @@ use std::io::Write;
 use url::Url;
 use xml::writer::{EventWriter, XmlEvent};
 
-#[derive(Debug, Deserialize, PartialEq, Serialize, Default)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Serialize, Default)]
 #[serde(rename = "Response")]
 pub struct VoiceResponse {
     pub verbs: Vec<Verb>,
 }
 
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
 pub enum Verb {
     Connect(Noun),
+    Reject,
 }
 
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
 pub enum Noun {
     Stream(Stream),
 }
@@ -48,7 +49,7 @@ impl From<String> for Noun {
     }
 }
 
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
 pub struct Stream {
     pub url: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -63,7 +64,7 @@ pub struct Stream {
     pub parameters: Option<Vec<Parameter>>,
 }
 
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Track {
     InboundTrack,
@@ -71,7 +72,7 @@ pub enum Track {
     BothTracks,
 }
 
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Parameter {
     pub name: String,
     pub value: String,
@@ -83,7 +84,7 @@ impl From<Stream> for Noun {
     }
 }
 
-#[derive(Default)]
+#[derive(Clone, Debug, Default)]
 pub struct StreamNounBuilder {
     url: Option<String>,
     name: Option<String>,
@@ -127,9 +128,7 @@ impl StreamNounBuilder {
     pub fn status_callback(mut self, callback: impl Into<String>) -> Result<Self, TwilioError> {
         let callback_str = callback.into();
         if let Err(_) = Url::parse(&callback_str) {
-            return Err(TwilioError::InvalidWebSocketUrl(
-                "Invalid status callback URL".to_string(),
-            ));
+            return Err(TwilioError::InvalidCallbackUrl(callback_str));
         }
         self.status_callback = Some(callback_str);
         Ok(self)
@@ -178,6 +177,11 @@ impl VoiceResponse {
 
     pub fn connect(&mut self, noun: impl Into<Noun>) -> &mut Self {
         self.verbs.push(Verb::Connect(noun.into()));
+        self
+    }
+
+    pub fn reject(mut self) -> Self {
+        self.verbs.push(Verb::Reject);
         self
     }
 
@@ -255,6 +259,10 @@ impl VoiceResponse {
                     }
 
                     writer.write(XmlEvent::end_element().name("Connect"))?;
+                }
+                Verb::Reject => {
+                    writer.write(XmlEvent::start_element("Reject"))?;
+                    writer.write(XmlEvent::end_element().name("Reject"))?;
                 }
             }
         }
@@ -334,5 +342,13 @@ mod test {
             .unwrap();
 
         assert_eq!(response.body(), want);
+    }
+
+    #[test]
+    fn reject_is_constructing() {
+        let want = r#"<?xml version="1.0" encoding="UTF-8"?><Response><Reject /></Response>"#;
+        let got = VoiceResponse::new().reject().to_string().unwrap();
+
+        assert_eq!(got, want);
     }
 }
