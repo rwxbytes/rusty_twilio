@@ -170,7 +170,7 @@ impl TwilioEndpoint for UpdateStream {
 }
 
 /// See [Websocket Messages From Twilio](https://www.twilio.com/docs/voice/media-streams/websocket-messages#websocket-messages-from-twilio)
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum TwilioMessage {
     Connected(ConnectedMessage),
@@ -190,7 +190,7 @@ impl TryFrom<&str> for TwilioMessage {
 }
 
 /// See [Connected Message](https://www.twilio.com/docs/voice/media-streams/websocket-messages#connected-message)
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ConnectedMessage {
     pub event: String,
@@ -199,7 +199,7 @@ pub struct ConnectedMessage {
 }
 
 /// See [Start Message](https://www.twilio.com/docs/voice/media-streams/websocket-messages#start-message)
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct StartMessage {
     pub event: String,
@@ -208,7 +208,7 @@ pub struct StartMessage {
     pub stream_sid: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct StartMetadata {
     pub stream_sid: String,
@@ -219,7 +219,7 @@ pub struct StartMetadata {
     pub media_format: MediaFormat,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct MediaFormat {
     pub encoding: String,
@@ -227,7 +227,7 @@ pub struct MediaFormat {
     pub channels: u32,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Track {
     #[serde(rename = "inbound")]
     Inbound,
@@ -236,7 +236,7 @@ pub enum Track {
 }
 
 /// See [Media Message](https://www.twilio.com/docs/voice/media-streams/websocket-messages#media-message)
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct MediaMessage {
     pub event: String,
@@ -246,7 +246,7 @@ pub struct MediaMessage {
     pub media: Media,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Media {
     pub payload: String,
@@ -273,7 +273,7 @@ impl MediaMessage {
 }
 
 /// See [Stop Message](https://www.twilio.com/docs/voice/media-streams/websocket-messages#stop-message)
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct StopMessage {
     pub event: String,
@@ -282,7 +282,7 @@ pub struct StopMessage {
     pub stop: Stop,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Stop {
     pub account_sid: String,
@@ -290,7 +290,7 @@ pub struct Stop {
 }
 
 /// See [DTMF Message](https://www.twilio.com/docs/voice/media-streams/websocket-messages#dtmf-message)
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DtmfMessage {
     pub event: String,
@@ -299,7 +299,7 @@ pub struct DtmfMessage {
     pub dtmf: Dtmf,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Dtmf {
     pub digit: String,
@@ -307,7 +307,7 @@ pub struct Dtmf {
 }
 
 /// See [Mark Message](https://www.twilio.com/docs/voice/media-streams/websocket-messages#mark-message)
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct MarkMessage {
     pub event: String,
@@ -317,14 +317,14 @@ pub struct MarkMessage {
     pub mark: Mark,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Mark {
     pub name: String,
 }
 
 /// [Sending Clear Messages](https://www.twilio.com/docs/voice/media-streams/websocket-messages#send-a-clear-message)
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ClearMessage {
     pub event: String,
