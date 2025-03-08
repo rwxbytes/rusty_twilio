@@ -90,7 +90,7 @@ pub fn validate_twilio_signature(
 
 mod tests {
     use super::*;
-    use http::header::{HeaderMap, HeaderValue};
+    use http::header::HeaderMap;
     use http::Method;
     use std::collections::BTreeMap;
 
