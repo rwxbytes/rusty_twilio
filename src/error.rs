@@ -1,4 +1,5 @@
 use thiserror::Error;
+use crate::validation::SignatureValidationError;
 
 #[derive(Error, Debug)]
 pub enum TwilioError {
@@ -24,5 +25,6 @@ pub enum TwilioError {
     Xml(#[from] xml::writer::Error),
     #[error("UTF-8 encoding error: {0}")]
     Utf8(#[from] std::string::FromUtf8Error),
-
+    #[error("signature validation error: {0}")]
+    Validation(#[from] SignatureValidationError),
 }

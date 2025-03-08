@@ -1,8 +1,10 @@
 use crate::endpoints::{Region, RequestBody, TwilioEndpoint};
 use crate::error::TwilioError::*;
+use crate::validation::*;
 use crate::Result;
+use http::{HeaderMap, Method, Uri};
 use reqwest::header::CONTENT_TYPE;
-use reqwest::Method;
+use std::collections::BTreeMap;
 
 const APPLICATION_JSON: &str = "application/json";
 
@@ -18,9 +20,12 @@ pub struct TwilioClient {
 }
 
 impl TwilioClient {
-
     pub fn account_sid(&self) -> &str {
         &self.account_sid
+    }
+
+    pub fn auth_token(&self) -> &str {
+        &self.auth_token
     }
 
     pub fn from_env() -> Result<Self> {
@@ -83,5 +88,15 @@ impl TwilioClient {
 
     pub fn set_region(&mut self, region: Region) {
         self.region = region;
+    }
+
+    pub fn validate_request(
+        &self,
+        method: &Method,
+        uri: &Uri,
+        headers: &HeaderMap,
+        post_params: Option<&BTreeMap<String, String>>,
+    ) -> Result<()> {
+        Ok(validate_twilio_signature(&self.auth_token, method, uri, headers, post_params)?)
     }
 }
