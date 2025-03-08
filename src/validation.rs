@@ -1,6 +1,6 @@
-use http::{HeaderMap, Method, Uri};
 use base64::Engine;
 use hmac::{Hmac, Mac};
+use http::{HeaderMap, Method, Uri};
 use sha1::Sha1;
 use std::collections::BTreeMap;
 
@@ -35,6 +35,7 @@ pub fn validate_twilio_signature(
     post_params: Option<&BTreeMap<String, String>>,
 ) -> Result<(), SignatureValidationError> {
     // Get host from headers
+
     let host = headers
         .get("Host")
         .ok_or(SignatureValidationError::MissingHost)?
@@ -51,9 +52,7 @@ pub fn validate_twilio_signature(
     // Construct the base URL
     let url = format!(
         "https://{host}{}",
-        uri.path_and_query()
-            .map(|pq| pq.as_str())
-            .unwrap_or("")
+        uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("")
     );
     let mut data = url;
 
@@ -86,3 +85,140 @@ pub fn validate_twilio_signature(
 
     Ok(())
 }
+
+#[cfg(test)]
+
+mod tests {
+    use super::*;
+    use http::header::{HeaderMap, HeaderValue};
+    use http::Method;
+    use std::collections::BTreeMap;
+
+    type HmacSha1 = Hmac<Sha1>;
+
+    // Test utility to generate a valid Twilio signature for test cases
+    fn generate_valid_signature(
+        auth_token: &str,
+        url: &str,
+        params: Option<&BTreeMap<String, String>>,
+    ) -> String {
+        let mut data = url.to_string();
+
+        // Add sorted params to the data string if they exist
+        if let Some(params) = params {
+            for (key, value) in params {
+                data.push_str(key);
+                data.push_str(value);
+            }
+        }
+
+        // Compute HMAC-SHA1 signature
+        let mut mac =
+            HmacSha1::new_from_slice(auth_token.as_bytes()).expect("HMAC can take key of any size");
+        mac.update(data.as_bytes());
+        base64::engine::general_purpose::STANDARD.encode(mac.finalize().into_bytes())
+    }
+
+    #[test]
+    fn validate_twilio_signature_is_returning_ok_when_signature_is_valid() {
+        let auth_token = "test_auth_token";
+        let method = Method::POST;
+        let uri = Uri::from_static("https://example.com/webhook");
+        let mut headers = HeaderMap::new();
+        headers.insert("Host", "example.com".parse().unwrap());
+
+        let mut params = BTreeMap::new();
+        params.insert("CallSid".to_string(), "CA123456789".to_string());
+        params.insert("From".to_string(), "+12345678901".to_string());
+
+        let signature =
+            generate_valid_signature(auth_token, "https://example.com/webhook", Some(&params));
+        headers.insert("X-Twilio-Signature", signature.parse().unwrap());
+        headers.insert(
+            "Content-Type",
+            "application/x-www-form-urlencoded; charset=UTF-8"
+                .parse()
+                .unwrap(),
+        );
+
+        let result = validate_twilio_signature(auth_token, &method, &uri, &headers, Some(&params));
+
+        assert!(result.is_ok(), "Valid signature should pass validation");
+    }
+
+    #[test]
+    fn validate_twilio_signature_is_returning_invalid_signature_when_signature_is_invalid() {
+        let auth_token = "test_auth_token";
+        let method = Method::POST;
+        let uri = Uri::from_static("https://example.com/webhook");
+        let mut headers = HeaderMap::new();
+        headers.insert("Host", "example.com".parse().unwrap());
+
+        headers.insert("X-Twilio-Signature", "invalid_signature".parse().unwrap());
+        headers.insert("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8".parse().unwrap());
+
+        let params = BTreeMap::new();
+
+        let result = validate_twilio_signature(
+            auth_token,
+            &method,
+            &uri,
+            &headers,
+            Some(&params)
+        );
+
+        assert!(result.is_err(), "Invalid signature should fail validation");
+        if let Err(e) = result {
+            assert!(matches!(e, SignatureValidationError::InvalidSignature),
+                    "Error should be InvalidSignature");
+        }
+    }
+
+    #[test]
+    fn validate_twilio_signature_is_returning_missing_signature_when_signature_header_is_missing() {
+        let auth_token = "test_auth_token";
+        let method = Method::POST;
+        let uri = Uri::from_static("https://example.com/webhook");
+        let mut headers = HeaderMap::new();
+        headers.insert("Host", "example.com".parse().unwrap());
+        let params = BTreeMap::new();
+
+        let result = validate_twilio_signature(
+            auth_token,
+            &method,
+            &uri,
+            &headers,
+            Some(&params)
+        );
+
+        assert!(result.is_err(), "Missing signature should fail validation");
+        if let Err(e) = result {
+            assert!(matches!(e, SignatureValidationError::MissingSignature),
+                    "Error should be MissingSignature");
+        }
+    }
+
+    #[test]
+    fn validate_twilio_signature_is_returning_missing_host_when_host_header_is_missing() {
+        let auth_token = "test_auth_token";
+        let method = Method::POST;
+        let uri = Uri::from_static("https://example.com/webhook");
+        let mut headers = HeaderMap::new();
+        let params = BTreeMap::new();
+        let result = validate_twilio_signature(
+            auth_token,
+            &method,
+            &uri,
+            &headers,
+            Some(&params)
+        );
+        assert!(result.is_err(), "Missing host should fail validation");
+        if let Err(e) = result {
+            assert!(matches!(e, SignatureValidationError::MissingHost),
+                    "Error should be MissingHost");
+        }
+    }
+
+}
+
+
