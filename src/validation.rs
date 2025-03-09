@@ -35,7 +35,6 @@ pub fn validate_twilio_signature(
     post_params: Option<&BTreeMap<String, String>>,
 ) -> Result<(), SignatureValidationError> {
     // Get host from headers
-
     let host = headers
         .get("Host")
         .ok_or(SignatureValidationError::MissingHost)?
@@ -87,7 +86,6 @@ pub fn validate_twilio_signature(
 }
 
 #[cfg(test)]
-
 mod tests {
     use super::*;
     use http::header::HeaderMap;
@@ -155,22 +153,23 @@ mod tests {
         headers.insert("Host", "example.com".parse().unwrap());
 
         headers.insert("X-Twilio-Signature", "invalid_signature".parse().unwrap());
-        headers.insert("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8".parse().unwrap());
+        headers.insert(
+            "Content-Type",
+            "application/x-www-form-urlencoded; charset=UTF-8"
+                .parse()
+                .unwrap(),
+        );
 
         let params = BTreeMap::new();
 
-        let result = validate_twilio_signature(
-            auth_token,
-            &method,
-            &uri,
-            &headers,
-            Some(&params)
-        );
+        let result = validate_twilio_signature(auth_token, &method, &uri, &headers, Some(&params));
 
         assert!(result.is_err(), "Invalid signature should fail validation");
         if let Err(e) = result {
-            assert!(matches!(e, SignatureValidationError::InvalidSignature),
-                    "Error should be InvalidSignature");
+            assert!(
+                matches!(e, SignatureValidationError::InvalidSignature),
+                "Error should be InvalidSignature"
+            );
         }
     }
 
@@ -183,18 +182,14 @@ mod tests {
         headers.insert("Host", "example.com".parse().unwrap());
         let params = BTreeMap::new();
 
-        let result = validate_twilio_signature(
-            auth_token,
-            &method,
-            &uri,
-            &headers,
-            Some(&params)
-        );
+        let result = validate_twilio_signature(auth_token, &method, &uri, &headers, Some(&params));
 
         assert!(result.is_err(), "Missing signature should fail validation");
         if let Err(e) = result {
-            assert!(matches!(e, SignatureValidationError::MissingSignature),
-                    "Error should be MissingSignature");
+            assert!(
+                matches!(e, SignatureValidationError::MissingSignature),
+                "Error should be MissingSignature"
+            );
         }
     }
 
@@ -205,20 +200,62 @@ mod tests {
         let uri = Uri::from_static("https://example.com/webhook");
         let mut headers = HeaderMap::new();
         let params = BTreeMap::new();
-        let result = validate_twilio_signature(
-            auth_token,
-            &method,
-            &uri,
-            &headers,
-            Some(&params)
-        );
+        let result = validate_twilio_signature(auth_token, &method, &uri, &headers, Some(&params));
         assert!(result.is_err(), "Missing host should fail validation");
         if let Err(e) = result {
-            assert!(matches!(e, SignatureValidationError::MissingHost),
-                    "Error should be MissingHost");
+            assert!(
+                matches!(e, SignatureValidationError::MissingHost),
+                "Error should be MissingHost"
+            );
         }
     }
 
+    #[test]
+    fn validate_twilio_signature_is_returning_ok_when_signature_is_valid_via_get_verb() {
+        let auth_token = "test_auth_token";
+        let method = Method::GET;
+
+        let url = "https://example.com/webhook?CallSid=CA123&From=%2B1234567890";
+        let uri = Uri::from_static(url);
+
+        let signature = generate_valid_signature(auth_token, url, None);
+
+        let mut headers = HeaderMap::new();
+        headers.insert("Host", "example.com".parse().unwrap());
+        headers.insert("X-Twilio-Signature", signature.parse().unwrap());
+        headers.insert(
+            "Content-Type",
+            "application/x-www-form-urlencoded; charset=UTF-8"
+                .parse()
+                .unwrap(),
+        );
+        let result = validate_twilio_signature(auth_token, &method, &uri, &headers, None);
+        assert!(result.is_ok(), "Valid signature should pass validation");
+    }
+
+    #[test]
+    fn validate_twilio_signature_is_returning_invalid_signature_when_signature_is_invalid_via_get_verb(
+    ) {
+        let auth = "test_auth_token";
+        let method = Method::GET;
+        let url = "https://example.com/webhook?CallSid=CA123&From=%2B1234567890";
+        let uri = Uri::from_static(url);
+        let mut headers = HeaderMap::new();
+        headers.insert("Host", "example.com".parse().unwrap());
+        headers.insert("X-Twilio-Signature", "invalid_signature".parse().unwrap());
+        headers.insert(
+            "Content-Type",
+            "application/x-www-form-urlencoded; charset=UTF-8"
+                .parse()
+                .unwrap(),
+        );
+        let result = validate_twilio_signature(auth, &method, &uri, &headers, None);
+        assert!(result.is_err(), "Invalid signature should fail validation");
+        if let Err(e) = result {
+            assert!(
+                matches!(e, SignatureValidationError::InvalidSignature),
+                "Error should be InvalidSignature"
+            );
+        }
+    }
 }
-
-
