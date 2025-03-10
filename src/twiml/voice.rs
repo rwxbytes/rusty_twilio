@@ -2,7 +2,6 @@ use crate::error::TwilioError;
 use http::header::CONTENT_TYPE;
 use http::{header::HeaderValue, Response};
 use serde::{Deserialize, Serialize};
-use std::io::Write;
 use url::Url;
 use xml::writer::{EventWriter, XmlEvent};
 

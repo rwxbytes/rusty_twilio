@@ -48,9 +48,16 @@ pub fn validate_twilio_signature(
         .to_str()
         .map_err(|_| SignatureValidationError::InvalidSignature)?;
 
+    let scheme = if headers.get("Upgrade").is_some() {
+        "wss"
+    } else {
+        "https"
+    };
+
     // Construct the base URL
     let url = format!(
-        "https://{host}{}",
+        "{}://{host}{}",
+        scheme,
         uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("")
     );
     let mut data = url;
@@ -198,7 +205,7 @@ mod tests {
         let auth_token = "test_auth_token";
         let method = Method::POST;
         let uri = Uri::from_static("https://example.com/webhook");
-        let mut headers = HeaderMap::new();
+        let headers = HeaderMap::new();
         let params = BTreeMap::new();
         let result = validate_twilio_signature(auth_token, &method, &uri, &headers, Some(&params));
         assert!(result.is_err(), "Missing host should fail validation");
@@ -250,6 +257,46 @@ mod tests {
                 .unwrap(),
         );
         let result = validate_twilio_signature(auth, &method, &uri, &headers, None);
+        assert!(result.is_err(), "Invalid signature should fail validation");
+        if let Err(e) = result {
+            assert!(
+                matches!(e, SignatureValidationError::InvalidSignature),
+                "Error should be InvalidSignature"
+            );
+        }
+    }
+
+    #[test]
+    fn validate_twilio_signature_is_returning_ok_when_signature_is_valid_and_scheme_is_wss() {
+        let auth_token = "test_auth_token";
+        let method = Method::GET;
+        let url = "wss://example.com/webhook";
+        let uri = Uri::from_static(url);
+
+        let signature = generate_valid_signature(auth_token, url, None);
+
+        let mut headers = HeaderMap::new();
+        headers.insert("Host", "example.com".parse().unwrap());
+        headers.insert("X-Twilio-Signature", signature.parse().unwrap());
+        headers.insert("Upgrade", "websocket".parse().unwrap());
+
+        let result = validate_twilio_signature(auth_token, &method, &uri, &headers, None);
+        assert!(result.is_ok(), "Valid signature should pass validation");
+    }
+
+    #[test]
+    fn validate_twilio_signature_is_returning_invalid_signature_when_signature_is_invalid_and_scheme_is_wss(
+    ) {
+        let auth_token = "test_auth_token";
+        let method = Method::GET;
+        let url = "wss://example.com/webhook";
+        let uri = Uri::from_static(url);
+        let mut headers = HeaderMap::new();
+        headers.insert("Host", "example.com".parse().unwrap());
+        headers.insert("X-Twilio-Signature", "invalid_signature".parse().unwrap());
+        headers.insert("Upgrade", "websocket".parse().unwrap());
+
+        let result = validate_twilio_signature(auth_token, &method, &uri, &headers, None);
         assert!(result.is_err(), "Invalid signature should fail validation");
         if let Err(e) = result {
             assert!(
