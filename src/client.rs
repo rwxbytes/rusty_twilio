@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::endpoints::{Region, RequestBody, TwilioEndpoint};
 use crate::error::TwilioError::*;
 use crate::validation::*;
