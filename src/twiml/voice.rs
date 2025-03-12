@@ -1,3 +1,4 @@
+use super::XmlSerializable;
 use crate::error::TwilioError;
 use http::header::CONTENT_TYPE;
 use http::{header::HeaderValue, Response};
@@ -13,8 +14,23 @@ pub struct VoiceResponse {
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
 pub enum Verb {
+    /// See [Connect](https://www.twilio.com/docs/voice/twiml/connect)
     Connect(Noun),
+    /// See [Dial](https://www.twilio.com/docs/voice/twiml/dial)
+    Dial {
+        number: String,
+        attributes: Vec<Attribute>,
+        noun: Option<Noun>,
+    },
+    /// See [Reject](https://www.twilio.com/docs/voice/twiml/reject)
     Reject,
+}
+
+/// An attribute for a verb, must be camelCase
+#[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
+pub struct Attribute {
+    pub name: String,
+    pub value: String,
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
@@ -22,6 +38,7 @@ pub enum Noun {
     Stream(Stream),
 }
 
+// TODO: must change these Froms as more Nouns are added
 impl From<&str> for Noun {
     fn from(url: &str) -> Self {
         Noun::Stream(Stream {
@@ -173,9 +190,33 @@ impl VoiceResponse {
     pub fn new() -> Self {
         Self::default()
     }
+    /// Add an attribute to the last verb
+    pub fn attr(mut self, name: impl Into<String>, value: impl Into<String>) -> Self {
+        match self.verbs.last_mut() {
+            Some(verb) => {
+                if let Verb::Dial { attributes, .. } = verb {
+                    attributes.push(Attribute {
+                        name: name.into(),
+                        value: value.into(),
+                    });
+                }
+            }
+            _ => {}
+        }
+        self
+    }
 
     pub fn connect(mut self, noun: impl Into<Noun>) -> Self {
         self.verbs.push(Verb::Connect(noun.into()));
+        self
+    }
+
+    pub fn dial(mut self, number: impl Into<String>, noun: Option<Noun>) -> Self {
+        self.verbs.push(Verb::Dial {
+            number: number.into(),
+            attributes: vec![],
+            noun,
+        });
         self
     }
 
@@ -199,82 +240,107 @@ impl VoiceResponse {
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, TwilioError> {
-        let w = Vec::new();
-        let mut writer = EventWriter::new(w);
-
+        let mut writer = EventWriter::new(Vec::new());
         writer.write(XmlEvent::start_element("Response"))?;
-
         for verb in &self.verbs {
-            match verb {
-                Verb::Connect(noun) => {
-                    writer.write(XmlEvent::start_element("Connect"))?;
+            verb.write_xml(&mut writer)?;
+        }
+        writer.write(XmlEvent::end_element())?;
+        Ok(writer.into_inner())
+    }
+}
 
-                    match noun {
-                        Noun::Stream(stream) => {
-                            if let Err(_) = Url::parse(&stream.url) {
-                                return Err(TwilioError::InvalidWebSocketUrl(stream.url.clone()));
-                            }
-
-                            if !stream.url.starts_with("wss://") {
-                                return Err(TwilioError::InvalidWebSocketUrl(
-                                    "URL must start with 'wss://'".to_string(),
-                                ));
-                            }
-
-                            let mut stream_element =
-                                XmlEvent::start_element("Stream").attr("url", &stream.url);
-
-                            if let Some(name) = &stream.name {
-                                stream_element = stream_element.attr("name", name);
-                            }
-                            if let Some(track) = &stream.track {
-                                stream_element = stream_element.attr(
-                                    "track",
-                                    match track {
-                                        Track::InboundTrack => "inbound_track",
-                                        Track::OutboundTrack => "outbound_track",
-                                        Track::BothTracks => "both_tracks",
-                                    },
-                                );
-                            }
-                            if let Some(callback) = &stream.status_callback {
-                                stream_element = stream_element.attr("statusCallback", callback);
-                            }
-                            if let Some(method) = &stream.status_callback_method {
-                                stream_element =
-                                    stream_element.attr("statusCallbackMethod", method);
-                            }
-
-                            writer.write(stream_element)?;
-
-                            if let Some(parameters) = &stream.parameters {
-                                for parameter in parameters {
-                                    let parameter_element = XmlEvent::start_element("Parameter")
-                                        .attr("name", &parameter.name)
-                                        .attr("value", &parameter.value);
-
-                                    writer.write(parameter_element)?;
-                                    writer.write(XmlEvent::end_element().name("Parameter"))?;
-                                }
-                            }
-
-                            writer.write(XmlEvent::end_element().name("Stream"))?;
-                        }
-                    }
-
-                    writer.write(XmlEvent::end_element().name("Connect"))?;
+impl XmlSerializable for Verb {
+    fn write_xml(&self, writer: &mut EventWriter<Vec<u8>>) -> Result<(), TwilioError> {
+        // TODO: ensure that the nouns are compatible with the verbs
+        match self {
+            Verb::Connect(noun) => {
+                writer.write(XmlEvent::start_element("Connect"))?;
+                noun.write_xml(writer)?;
+                writer.write(XmlEvent::end_element())?;
+                Ok(())
+            }
+            Verb::Dial {
+                number,
+                noun,
+                attributes,
+            } => {
+                let mut dial = XmlEvent::start_element("Dial");
+                for attribute in attributes {
+                    dial = dial.attr(attribute.name.as_str(), attribute.value.as_str());
                 }
-                Verb::Reject => {
-                    writer.write(XmlEvent::start_element("Reject"))?;
-                    writer.write(XmlEvent::end_element().name("Reject"))?;
+                writer.write(dial)?;
+                writer.write(XmlEvent::characters(number))?;
+                if let Some(noun) = noun {
+                    noun.write_xml(writer)?;
                 }
+                writer.write(XmlEvent::end_element())?;
+                Ok(())
+            }
+            Verb::Reject => {
+                writer.write(XmlEvent::start_element("Reject"))?;
+                writer.write(XmlEvent::end_element())?;
+                Ok(())
+            }
+        }
+    }
+}
+
+impl XmlSerializable for Noun {
+    fn write_xml(&self, writer: &mut EventWriter<Vec<u8>>) -> Result<(), TwilioError> {
+        match self {
+            Noun::Stream(stream) => stream.write_xml(writer),
+            //_ => Err(TwilioError::UnsupportedNoun),
+        }
+    }
+}
+
+impl XmlSerializable for Stream {
+    fn write_xml(&self, writer: &mut EventWriter<Vec<u8>>) -> Result<(), TwilioError> {
+        if let Err(_) = Url::parse(&self.url) {
+            return Err(TwilioError::InvalidWebSocketUrl(self.url.clone()));
+        }
+        if !self.url.starts_with("wss://") {
+            return Err(TwilioError::InvalidWebSocketUrl(
+                "URL must start with 'wss://'".to_string(),
+            ));
+        }
+
+        let mut stream_element = XmlEvent::start_element("Stream").attr("url", &self.url);
+        if let Some(name) = &self.name {
+            stream_element = stream_element.attr("name", name);
+        }
+        if let Some(track) = &self.track {
+            stream_element = stream_element.attr(
+                "track",
+                match track {
+                    Track::InboundTrack => "inbound_track",
+                    Track::OutboundTrack => "outbound_track",
+                    Track::BothTracks => "both_tracks",
+                },
+            );
+        }
+        if let Some(callback) = &self.status_callback {
+            stream_element = stream_element.attr("statusCallback", callback);
+        }
+        if let Some(method) = &self.status_callback_method {
+            stream_element = stream_element.attr("statusCallbackMethod", method);
+        }
+        writer.write(stream_element)?;
+
+        if let Some(parameters) = &self.parameters {
+            for param in parameters {
+                writer.write(
+                    XmlEvent::start_element("Parameter")
+                        .attr("name", &param.name)
+                        .attr("value", &param.value),
+                )?;
+                writer.write(XmlEvent::end_element())?;
             }
         }
 
-        writer.write(XmlEvent::end_element().name("Response"))?;
-
-        let buffer = writer.into_inner();
-        Ok(buffer)
+        writer.write(XmlEvent::end_element())?;
+        Ok(())
     }
 }
 
@@ -352,6 +418,29 @@ mod test {
     fn reject_is_constructing() {
         let want = r#"<?xml version="1.0" encoding="UTF-8"?><Response><Reject /></Response>"#;
         let got = VoiceResponse::new().reject().to_string().unwrap();
+
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn basic_dial_is_constructing() {
+        let want = r#"<?xml version="1.0" encoding="UTF-8"?><Response><Dial>415-123-4567</Dial></Response>"#;
+        let got = VoiceResponse::new()
+            .dial("415-123-4567", None)
+            .to_string()
+            .unwrap();
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn basic_dial_with_attributes_is_constructing() {
+        let want = r#"<?xml version="1.0" encoding="UTF-8"?><Response><Dial action="/handleDialCallStatus" method="GET">415-123-4567</Dial></Response>"#;
+        let got = VoiceResponse::new()
+            .dial("415-123-4567", None)
+            .attr("action", "/handleDialCallStatus")
+            .attr("method", "GET")
+            .to_string()
+            .unwrap();
 
         assert_eq!(got, want);
     }

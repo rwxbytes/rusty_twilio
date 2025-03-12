@@ -4,6 +4,7 @@
 use super::*;
 use crate::endpoints::applications::ApiVersion;
 use crate::url::query::{ByToAndFrom, CallQueryMarker, TwilioQuery};
+use std::collections::HashMap;
 use std::string::ToString;
 use strum::Display;
 
@@ -30,7 +31,8 @@ pub struct TwilioRequestParams {
     pub to_state: Option<String>,
     pub to_zip: Option<String>,
     pub to_country: Option<String>,
-    // TODO: SIP & other fields based on Twiml verbs
+    #[serde(flatten)]
+    pub extra: HashMap<String, String>,
 }
 
 #[derive(Clone, Debug, Deserialize)]

@@ -1,5 +1,5 @@
-use thiserror::Error;
 use crate::validation::SignatureValidationError;
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum TwilioError {
@@ -27,4 +27,6 @@ pub enum TwilioError {
     Utf8(#[from] std::string::FromUtf8Error),
     #[error("signature validation error: {0}")]
     Validation(#[from] SignatureValidationError),
+    #[error("unsupported noun")]
+    UnsupportedNoun,
 }
