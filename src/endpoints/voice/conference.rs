@@ -144,7 +144,7 @@ pub struct UpdateConferenceBody {
 }
 
 impl TwilioEndpoint for UpdateConference {
-    const PATH: &'static str = "/2010-04-01/Accounts/{AccountSid}/Conferences/{ConferenceSid}.json";
+    const PATH: &'static str = "/2010-04-01/Accounts/{AccountSid}/Conferences/{Sid}.json";
 
     const METHOD: Method = Method::POST;
 
@@ -153,7 +153,7 @@ impl TwilioEndpoint for UpdateConference {
     fn path_params(&self) -> Vec<(&'static str, &str)> {
         vec![
             ("{AccountSid}", &self.account_sid),
-            ("{ConferenceSid}", &self.conference_sid),
+            ("{Sid}", &self.conference_sid),
         ]
     }
 
