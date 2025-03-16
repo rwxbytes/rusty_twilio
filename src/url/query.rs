@@ -100,3 +100,26 @@ impl<T: CallQueryMarker> TwilioQuery<T> {
         self
     }
 }
+
+pub trait ByDateCreatedAndDateUpdated {}
+
+impl<T: ByDateCreatedAndDateUpdated> TwilioQuery<T> {
+    pub fn with_date_created(mut self, date_created: impl Into<String>) -> Self {
+        self.params.push(("DateCreated", date_created.into()));
+        self
+    }
+
+    pub fn with_date_updated(mut self, date_updated: impl Into<String>) -> Self {
+        self.params.push(("DateUpdated", date_updated.into()));
+        self
+    }
+}
+
+pub trait ConferenceQueryMarker {}
+
+impl<T: ConferenceQueryMarker> TwilioQuery<T> {
+    pub fn with_conference_status(mut self, status: impl Into<String>) -> Self {
+        self.params.push(("Status", status.into()));
+        self
+    }
+}
