@@ -2,10 +2,10 @@
 //! See [Applications reference](https://www.twilio.com/docs/usage/api/applications)
 
 use super::*;
+use crate::url::query::ByFriendlyName;
+use crate::TwilioQuery;
 use std::string::ToString;
 use strum::Display;
-use crate::TwilioQuery;
-use crate::url::query::ByFriendlyName;
 
 #[derive(Clone, Debug, Deserialize)]
 /// See [Application Properties](https://www.twilio.com/docs/usage/api/applications#application-properties)
@@ -54,7 +54,7 @@ pub struct ApplicationResponse {
     pub public_application_connect_enabled: Option<bool>,
 }
 
-#[derive(Clone, Debug, Deserialize, Display)]
+#[derive(Clone, Debug, Deserialize, Display, Serialize)]
 pub enum ApiVersion {
     #[serde(rename = "2010-04-01")]
     #[strum(to_string = "2010-04-01")]
@@ -64,104 +64,59 @@ pub enum ApiVersion {
     V20080801,
 }
 
-#[derive(Clone, Debug)]
-pub struct CreateApplication {
+#[derive(Debug)]
+pub struct CreateApplication<'a> {
     pub account_sid: String,
-    pub body: CreateApplicationBody,
+    pub body: RequestBody<CreateApplicationBody<'a>>,
 }
 
-impl CreateApplication {
-    pub fn new(account_sid: impl Into<String>, body: CreateApplicationBody) -> Self {
+impl<'a> CreateApplication<'a> {
+    pub fn new(account_sid: impl Into<String>, body: CreateApplicationBody<'a>) -> Self {
         Self {
             account_sid: account_sid.into(),
-            body,
+            body: RequestBody::Form(body),
         }
     }
 }
 
-#[derive(Clone, Debug, Default)]
-pub struct CreateApplicationBody {
-    pub params: Vec<(&'static str, String)>,
+#[derive(Clone, Debug, Default, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct CreateApplicationBody<'a> {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub friendly_name: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub api_version: Option<ApiVersion>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub voice_url: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub voice_method: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub voice_fallback_url: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub voice_fallback_method: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status_callback: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status_callback_method: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub voice_caller_id_lookup: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sms_url: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sms_method: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sms_fallback_url: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sms_fallback_method: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sms_status_callback: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message_status_callback: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub public_application_connect_enabled: Option<bool>,
 }
 
-impl CreateApplicationBody {
-
-    pub fn with_friendly_name(mut self, friendly_name: impl Into<String>) -> Self {
-        self.params
-            .push((FRIENDLY_NAME, friendly_name.into()));
-        self
-    }
-
-    pub fn with_api_version(mut self, api_version: ApiVersion) -> Self {
-        self.params
-            .push((API_VERSION, api_version.to_string()));
-        self
-    }
-
-    pub fn with_voice_url(mut self, voice_url: impl Into<String>) -> Self {
-        self.params.push((VOICE_URL, voice_url.into()));
-        self
-    }
-
-    pub fn with_voice_method(mut self, voice_method: impl Into<String>) -> Self {
-        self.params.push((VOICE_METHOD, voice_method.into()));
-        self
-    }
-
-    pub fn with_voice_fallback_url(mut self, voice_fallback_url: impl Into<String>) -> Self {
-        self.params.push((VOICE_FALLBACK_URL, voice_fallback_url.into()));
-        self
-    }
-
-    pub fn with_voice_fallback_method(mut self, voice_fallback_method: impl Into<String>) -> Self {
-        self.params.push((VOICE_FALLBACK_METHOD, voice_fallback_method.into()));
-        self
-    }
-
-    pub fn with_status_callback(mut self, status_callback: impl Into<String>) -> Self {
-        self.params.push((STATUS_CALLBACK, status_callback.into()));
-        self
-    }
-
-    pub fn with_status_callback_method(mut self, status_callback_method: impl Into<String>) -> Self {
-        self.params.push((STATUS_CALLBACK_METHOD, status_callback_method.into()));
-        self
-    }
-
-    pub fn with_sms_url(mut self, sms_url: impl Into<String>) -> Self {
-        self.params.push((SMS_URL, sms_url.into()));
-        self
-    }
-
-    pub fn with_sms_method(mut self, sms_method: impl Into<String>) -> Self {
-        self.params.push((SMS_METHOD, sms_method.into()));
-        self
-    }
-
-    pub fn with_sms_fallback_url(mut self, sms_fallback_url: impl Into<String>) -> Self {
-        self.params.push((SMS_FALLBACK_URL, sms_fallback_url.into()));
-        self
-    }
-
-    pub fn with_sms_fallback_method(mut self, sms_fallback_method: impl Into<String>) -> Self {
-        self.params.push((SMS_FALLBACK_METHOD, sms_fallback_method.into()));
-        self
-    }
-
-    pub fn with_message_status_callback(mut self, message_status_callback: impl Into<String>) -> Self {
-        self.params.push((MESSAGE_STATUS_CALLBACK, message_status_callback.into()));
-        self
-    }
-
-    pub fn with_public_application_connect_enabled(mut self, public_application_connect_enabled: bool) -> Self {
-        self.params.push((PUBLIC_APPLICATION_CONNECT_ENABLED, public_application_connect_enabled.to_string()));
-        self
-    }
-}
-
-
-
-impl TwilioEndpoint for CreateApplication {
+impl TwilioEndpoint for CreateApplication<'_> {
     const PATH: &'static str = "2010-04-01/Accounts/{AccountSid}/Applications.json";
 
     const METHOD: Method = Method::POST;
@@ -172,11 +127,14 @@ impl TwilioEndpoint for CreateApplication {
         vec![("{AccountSid}", &self.account_sid)]
     }
 
-    fn request_body(&self) -> Result<RequestBody> {
-        Ok(RequestBody::Form(self.body.params.clone()))
+    fn configure_request(self, builder: RequestBuilder) -> Result<RequestBuilder>
+    where
+        Self: Sized,
+    {
+        self.body.configure(builder)
     }
 
-    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
+    async fn response_body(resp: Response) -> Result<Self::ResponseBody> {
         Ok(resp.json().await?)
     }
 }
@@ -210,7 +168,7 @@ impl TwilioEndpoint for FetchApplication {
         ]
     }
 
-    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
+    async fn response_body(resp: Response) -> Result<Self::ResponseBody> {
         Ok(resp.json().await?)
     }
 }
@@ -247,7 +205,7 @@ impl TwilioEndpoint for ListApplications {
         vec![("{AccountSid}", &self.account_sid)]
     }
 
-    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
+    async fn response_body(resp: Response) -> Result<Self::ResponseBody> {
         Ok(resp.json().await?)
     }
 }
@@ -259,29 +217,29 @@ pub struct ListApplicationsResponse {
     pub pagination: Pagination,
 }
 
-#[derive(Clone, Debug)]
-pub struct UpdateApplication {
+#[derive(Debug)]
+pub struct UpdateApplication<'a> {
     pub account_sid: String,
     pub application_sid: String,
-    pub body: UpdateApplicationBody,
+    pub body: RequestBody<UpdateApplicationBody<'a>>,
 }
-pub type UpdateApplicationBody = CreateApplicationBody;
+pub type UpdateApplicationBody<'a> = CreateApplicationBody<'a>;
 
-impl UpdateApplication {
+impl<'a> UpdateApplication<'a> {
     pub fn new(
         account_sid: impl Into<String>,
         application_sid: impl Into<String>,
-        body: UpdateApplicationBody,
+        body: UpdateApplicationBody<'a>,
     ) -> Self {
         Self {
             account_sid: account_sid.into(),
             application_sid: application_sid.into(),
-            body,
+            body: RequestBody::Form(body),
         }
     }
 }
 
-impl TwilioEndpoint for UpdateApplication {
+impl TwilioEndpoint for UpdateApplication<'_> {
     const PATH: &'static str = "2010-04-01/Accounts/{AccountSid}/Applications/{Sid}.json";
 
     const METHOD: Method = Method::POST;
@@ -295,16 +253,19 @@ impl TwilioEndpoint for UpdateApplication {
         ]
     }
 
-    fn request_body(&self) -> Result<RequestBody> {
-        Ok(RequestBody::Form(self.body.params.clone()))
+    fn configure_request(self, builder: RequestBuilder) -> Result<RequestBuilder>
+    where
+        Self: Sized,
+    {
+        self.body.configure(builder)
     }
 
-    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
+    async fn response_body(resp: Response) -> Result<Self::ResponseBody> {
         Ok(resp.json().await?)
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct DeleteApplication {
     pub account_sid: String,
     pub application_sid: String,
@@ -333,7 +294,7 @@ impl TwilioEndpoint for DeleteApplication {
         ]
     }
 
-    async fn response_body(self, _resp: Response) -> Result<Self::ResponseBody> {
+    async fn response_body(_resp: Response) -> Result<Self::ResponseBody> {
         Ok(())
     }
 }
