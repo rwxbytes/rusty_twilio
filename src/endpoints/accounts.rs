@@ -2,6 +2,7 @@
 //! See [Twilio Accounts API](https://www.twilio.com/docs/iam/api/account)
 use super::*;
 use crate::url::query::{AccountQueryMarker, ByFriendlyName, TwilioQuery};
+use reqwest::RequestBuilder;
 use std::string::ToString;
 use strum::Display;
 
@@ -28,7 +29,7 @@ pub struct AccountResponse {
     pub uri: String,
 }
 
-#[derive(Clone, Debug, Deserialize, Display)]
+#[derive(Clone, Debug, Deserialize, Display, Serialize)]
 #[serde(rename_all = "lowercase")]
 #[strum(serialize_all = "lowercase")]
 pub enum Status {
@@ -44,32 +45,40 @@ pub enum AccountType {
     Full,
 }
 
-#[derive(Clone, Debug)]
-pub struct CreateAccount {
-    pub friendly_name: String,
+#[derive(Debug)]
+pub struct CreateAccount<'a> {
+    pub body: RequestBody<CreateAccountBody<'a>>,
 }
 
-impl CreateAccount {
-    pub fn new(friendly_name: impl Into<String>) -> Self {
+impl<'a> CreateAccount<'a> {
+    pub fn new(friendly_name: &'a str) -> Self {
         Self {
-            friendly_name: friendly_name.into(),
+            body: RequestBody::Form(CreateAccountBody {
+                friendly_name: Some(friendly_name),
+            }),
         }
     }
 }
 
-impl TwilioEndpoint for CreateAccount {
+#[derive(Clone, Debug, Default, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct CreateAccountBody<'a> {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub friendly_name: Option<&'a str>,
+}
+
+impl TwilioEndpoint for CreateAccount<'_> {
     const PATH: &'static str = "2010-04-01/Accounts.json";
 
     const METHOD: Method = Method::POST;
 
     type ResponseBody = AccountResponse;
 
-    fn request_body(&self) -> Result<RequestBody> {
-        let form = vec![(FRIENDLY_NAME, self.friendly_name.clone())];
-        Ok(RequestBody::Form(form))
+    fn configure_request(self, builder: RequestBuilder) -> Result<RequestBuilder> {
+        self.body.configure(builder)
     }
 
-    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
+    async fn response_body(resp: Response) -> Result<Self::ResponseBody> {
         Ok(resp.json().await?)
     }
 }
@@ -98,7 +107,7 @@ impl TwilioEndpoint for FetchAccount {
         vec![("{Sid}", &self.account_sid)]
     }
 
-    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
+    async fn response_body(resp: Response) -> Result<Self::ResponseBody> {
         Ok(resp.json().await?)
     }
 }
@@ -129,7 +138,7 @@ impl TwilioEndpoint for ListAccounts {
         Some(self.query.params.clone())
     }
 
-    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
+    async fn response_body(resp: Response) -> Result<Self::ResponseBody> {
         Ok(resp.json().await?)
     }
 }
@@ -141,39 +150,31 @@ pub struct ListAccountsResponse {
     pub pagination: Pagination,
 }
 
-#[derive(Clone, Debug)]
-pub struct UpdateAccount {
+#[derive(Debug)]
+pub struct UpdateAccount<'a> {
     pub account_sid: String,
-    pub body: UpdateAccountBody,
+    pub body: RequestBody<UpdateAccountBody<'a>>,
 }
 
-impl UpdateAccount {
-    pub fn new(account_sid: impl Into<String>, body: UpdateAccountBody) -> Self {
+impl<'a> UpdateAccount<'a> {
+    pub fn new(account_sid: impl Into<String>, body: UpdateAccountBody<'a>) -> Self {
         Self {
             account_sid: account_sid.into(),
-            body,
+            body: RequestBody::Form(body),
         }
     }
 }
 
-#[derive(Clone, Debug, Default)]
-pub struct UpdateAccountBody {
-    pub params: Vec<(&'static str, String)>,
+#[derive(Clone, Debug, Default, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct UpdateAccountBody<'a> {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub friendly_name: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<Status>,
 }
 
-impl UpdateAccountBody {
-    pub fn with_friendly_name(mut self, friendly_name: impl Into<String>) -> Self {
-        self.params.push((FRIENDLY_NAME, friendly_name.into()));
-        self
-    }
-
-    pub fn with_status(mut self, status: Status) -> Self {
-        self.params.push((STATUS, status.to_string()));
-        self
-    }
-}
-
-impl TwilioEndpoint for UpdateAccount {
+impl TwilioEndpoint for UpdateAccount<'_> {
     const PATH: &'static str = "2010-04-01/Accounts/{Sid}.json";
 
     const METHOD: Method = Method::POST;
@@ -184,11 +185,11 @@ impl TwilioEndpoint for UpdateAccount {
         vec![("{Sid}", &self.account_sid)]
     }
 
-    fn request_body(&self) -> Result<RequestBody> {
-        Ok(RequestBody::Form(self.body.params.clone()))
+    fn configure_request(self, builder: RequestBuilder) -> Result<RequestBuilder> {
+        self.body.configure(builder)
     }
 
-    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
+    async fn response_body(resp: Response) -> Result<Self::ResponseBody> {
         Ok(resp.json().await?)
     }
 }
