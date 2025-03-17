@@ -22,82 +22,61 @@ pub struct StreamResponse {
     pub uri: String,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum StreamStatus {
     InProgress,
     Stopped,
 }
 
-#[derive(Clone, Debug)]
-pub struct CreateStream {
+#[derive(Debug)]
+pub struct CreateStream<'a> {
     pub account_sid: String,
     pub call_sid: String,
-    pub body: CreateStreamBody,
+    pub body: RequestBody<CreateStreamBody<'a>>,
 }
 
-#[derive(Clone, Debug)]
-pub struct CreateStreamBody {
-    pub params: Vec<(&'static str, String)>,
-}
-
-impl CreateStream {
+impl<'a> CreateStream<'a> {
     pub fn new(
         account_sid: impl Into<String>,
         call_sid: impl Into<String>,
-        body: CreateStreamBody,
+        body: CreateStreamBody<'a>,
     ) -> Self {
         Self {
             account_sid: account_sid.into(),
             call_sid: call_sid.into(),
-            body,
+            body: RequestBody::Form(body),
         }
     }
 }
 
-impl CreateStreamBody {
-    pub fn new(url: String) -> Self {
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct CreateStreamBody<'a> {
+    pub url: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub track: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status_callback: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status_callback_method: Option<&'a str>,
+}
+
+impl<'a> CreateStreamBody<'a> {
+    pub fn new(url: &'a str) -> Self {
         Self {
-            params: vec![(URL, url)],
+            url,
+            name: None,
+            track: None,
+            status_callback: None,
+            status_callback_method: None,
         }
-    }
-
-    pub fn with_name(mut self, name: impl Into<String>) -> Self {
-        self.params.push((NAME, name.into()));
-        self
-    }
-
-    pub fn with_track(mut self, track: impl Into<String>) -> Self {
-        self.params.push((TRACK, track.into()));
-        self
-    }
-
-    pub fn with_status_callback(mut self, status_callback: impl Into<String>) -> Self {
-        self.params.push((STATUS_CALLBACK, status_callback.into()));
-        self
-    }
-
-    pub fn with_status_callback_method(
-        mut self,
-        status_callback_method: impl Into<String>,
-    ) -> Self {
-        self.params
-            .push((STATUS_CALLBACK_METHOD, status_callback_method.into()));
-        self
-    }
-    /// See [Custom Parameters](https://www.twilio.com/docs/voice/api/stream-resource#custom-parameters)
-    // TODO: may need to change type again
-    pub fn with_custom_parameter(
-        mut self,
-        key: &'static str,
-        value: impl Into<String>,
-    ) -> Self {
-        self.params.push((key, value.into()));
-        self
     }
 }
 
-impl TwilioEndpoint for CreateStream {
+impl TwilioEndpoint for CreateStream<'_> {
     const PATH: &'static str = "2010-04-01/Accounts/{AccountSid}/Calls/{CallSid}/Streams.json";
 
     const METHOD: Method = Method::POST;
@@ -111,11 +90,14 @@ impl TwilioEndpoint for CreateStream {
         ]
     }
 
-    fn request_body(&self) -> Result<RequestBody> {
-        Ok(RequestBody::Form(self.body.params.clone()))
+    fn configure_request(self, builder: RequestBuilder) -> Result<RequestBuilder>
+    where
+        Self: Sized,
+    {
+        self.body.configure(builder)
     }
 
-    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
+    async fn response_body(resp: Response) -> Result<Self::ResponseBody> {
         Ok(resp.json().await?)
     }
 }
@@ -160,11 +142,17 @@ impl TwilioEndpoint for UpdateStream {
         ]
     }
 
-    fn request_body(&self) -> Result<RequestBody> {
-        Ok(RequestBody::Form(vec![(STATUS, "stopped".to_string())]))
+    fn configure_request(self, builder: RequestBuilder) -> Result<RequestBuilder>
+    where
+        Self: Sized,
+    {
+        let body = vec![("Status", "stopped")];
+        Ok(builder.form(&body))
     }
 
-    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
+
+
+    async fn response_body(resp: Response) -> Result<Self::ResponseBody> {
         Ok(resp.json().await?)
     }
 }
