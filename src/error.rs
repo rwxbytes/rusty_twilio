@@ -1,8 +1,14 @@
+use serde::Deserialize;
 use crate::validation::SignatureValidationError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum TwilioError {
+    #[error("API error ({status}): {error:?}")]
+    Api {
+        status: reqwest::StatusCode,
+        error: TwilioApiError,
+    },
     #[error("request must have a body")]
     EmptyRequestBody,
     #[error("TWILIO_ACCOUNT_SID not set")]
@@ -15,8 +21,6 @@ pub enum TwilioError {
     Request(#[from] reqwest::Error),
     #[error("json error")]
     Json(#[from] serde_json::Error),
-    #[error("http error {0}")]
-    Http(serde_json::Value),
     #[error("invalid websocket url: {0}")]
     InvalidWebSocketUrl(String),
     #[error("invalid callback url: {0}")]
@@ -29,4 +33,13 @@ pub enum TwilioError {
     Validation(#[from] SignatureValidationError),
     #[error("unsupported noun")]
     UnsupportedNoun,
+}
+
+
+#[derive(Deserialize, Debug)]
+pub struct TwilioApiError {
+    code: i32,
+    message: String,
+    more_info: String,
+    status: i32,
 }
