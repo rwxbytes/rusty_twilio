@@ -47,7 +47,7 @@ impl<T: ByFriendlyName> TwilioQuery<T> {
 
 pub trait AccountQueryMarker {}
 impl<T: AccountQueryMarker> TwilioQuery<T> {
-    pub fn with_status(mut self, status: Status) -> Self {
+    pub fn with_account_status(mut self, status: Status) -> Self {
         self.params.push(("Status", status.to_string()));
         self
     }
