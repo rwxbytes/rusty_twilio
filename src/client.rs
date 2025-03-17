@@ -1,11 +1,11 @@
 #![allow(dead_code)]
-use crate::endpoints::{Region, RequestBody, TwilioEndpoint};
-use crate::error::TwilioError::*;
+use crate::endpoints::TwilioEndpoint;
+use crate::error::*;
 use crate::validation::*;
 use crate::Result;
 use http::{HeaderMap, Method, Uri};
-use reqwest::header::CONTENT_TYPE;
 use std::collections::BTreeMap;
+use url::Url;
 
 const APPLICATION_JSON: &str = "application/json";
 
@@ -17,7 +17,7 @@ pub struct TwilioClient {
     main_api_key: Option<String>,
     main_api_key_secret: Option<String>,
     number: Option<String>,
-    region: Region,
+    base_url: Url,
 }
 
 impl TwilioClient {
@@ -33,12 +33,13 @@ impl TwilioClient {
         Ok(Self {
             inner: reqwest::Client::new(),
             account_sid: std::env::var("TWILIO_ACCOUNT_SID")
-                .map_err(|_| MissingAccountSidEnvVar)?,
-            auth_token: std::env::var("TWILIO_AUTH_TOKEN").map_err(|_| MissingAuthTokenEnvVar)?,
+                .map_err(|_| TwilioError::MissingAccountSidEnvVar)?,
+            auth_token: std::env::var("TWILIO_AUTH_TOKEN")
+                .map_err(|_| TwilioError::MissingAuthTokenEnvVar)?,
             main_api_key: std::env::var("TWILIO_MAIN_API_KEY").ok(),
             main_api_key_secret: std::env::var("TWILIO_MAIN_API_KEY_SECRET").ok(),
             number: std::env::var("TWILIO_PHONE_NUMBER").ok(),
-            region: Region::UnitedStates,
+            base_url: Url::parse("https://api.twilio.com").unwrap(),
         })
     }
 
@@ -50,45 +51,36 @@ impl TwilioClient {
             main_api_key: None,
             main_api_key_secret: None,
             number: None,
-            region: Region::UnitedStates,
+            base_url: Url::parse("https://api.twilio.com").unwrap(),
         }
     }
 
-    pub async fn hit<T: TwilioEndpoint>(&self, endpoint: T) -> Result<T::ResponseBody> {
-        //if self.region != Default::default()
-
+    pub async fn hit<E: TwilioEndpoint>(&self, endpoint: E) -> Result<E::ResponseBody> {
         let mut builder = self
             .inner
-            .request(T::METHOD, endpoint.url())
+            .request(E::METHOD, endpoint.url(&self.base_url))
             .basic_auth(&self.account_sid, Some(&self.auth_token));
 
-        if matches!(T::METHOD, Method::POST | Method::PATCH) {
-            let request_body = endpoint.request_body()?;
-            builder = match request_body {
-                RequestBody::Json(json) => {
-                    builder.header(CONTENT_TYPE, APPLICATION_JSON).json(&json)
-                }
-                RequestBody::Multipart(form) => builder.multipart(form),
-                RequestBody::Form(form) => builder.form(&form),
-                RequestBody::Empty => return Err(EmptyRequestBody),
-            };
-        }
+        builder = endpoint.configure_request(builder)?;
 
         let resp = builder.send().await?;
 
         if !resp.status().is_success() {
-            return Err(Http(resp.json().await?));
+            let status = resp.status();
+            let error: TwilioApiError = resp.json().await?;
+            return Err(TwilioError::Api { status, error });
         }
 
-        endpoint.response_body(resp).await
+        E::response_body(resp).await
     }
 
     pub fn number(&self) -> Option<&str> {
         self.number.as_deref()
     }
 
-    pub fn set_region(&mut self, region: Region) {
-        self.region = region;
+    pub fn with_base_url(mut self, base_url: Url) -> Self {
+        self.base_url = base_url;
+        self
     }
 
     pub fn validate_request(
@@ -98,6 +90,12 @@ impl TwilioClient {
         headers: &HeaderMap,
         post_params: Option<&BTreeMap<String, String>>,
     ) -> Result<()> {
-        Ok(validate_twilio_signature(&self.auth_token, method, uri, headers, post_params)?)
+        Ok(validate_twilio_signature(
+            &self.auth_token,
+            method,
+            uri,
+            headers,
+            post_params,
+        )?)
     }
 }
