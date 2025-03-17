@@ -5,8 +5,6 @@ use super::*;
 use crate::endpoints::applications::ApiVersion;
 use crate::url::query::{ByToAndFrom, CallQueryMarker, TwilioQuery};
 use std::collections::HashMap;
-use std::string::ToString;
-use strum::Display;
 
 #[derive(Clone, Debug, Deserialize)]
 /// See [Twilio's Request To Your Application](https://www.twilio.com/docs/voice/twiml#twilios-request-to-your-application)
@@ -123,10 +121,9 @@ pub struct CallResponse {
     pub annotation: Option<String>,
 }
 
-#[derive(Clone, Debug, Deserialize, Display)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 /// See [Call Status](https://www.twilio.com/docs/voice/api/call-resource#call-status-values)
 #[serde(rename_all = "kebab-case")]
-#[strum(serialize_all = "kebab-case")]
 pub enum CallStatus {
     Queued,
     Ringing,
@@ -147,27 +144,144 @@ pub enum AnsweredBy {
     Unknown,
 }
 
-#[derive(Clone, Debug)]
-pub struct CreateCall {
+#[derive(Debug)]
+pub struct CreateCall<'a> {
     pub account_sid: String,
-    pub body: CreateCallBody,
+    pub body: RequestBody<CreateCallBody<'a>>,
 }
 
-#[derive(Clone, Debug, Default)]
-pub struct CreateCallBody {
-    pub params: Vec<(&'static str, String)>,
-}
-
-impl CreateCall {
-    pub fn new(account_sid: impl Into<String>, body: CreateCallBody) -> Self {
+impl<'a> CreateCall<'a> {
+    pub fn new(account_sid: impl Into<String>, body: CreateCallBody<'a>) -> Self {
         Self {
             account_sid: account_sid.into(),
-            body,
+            body: RequestBody::Form(body),
         }
     }
 }
 
-impl TwilioEndpoint for CreateCall {
+impl<'a> CreateCallBody<'a> {
+    pub fn new(to: &'a str, from: &'a str, url: &'a str) -> Self {
+        Self {
+            to,
+            from,
+            url: Some(url),
+            ..Default::default()
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct CreateCallBody<'a> {
+    pub to: &'a str,
+    pub from: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub twiml: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub application_sid: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub method: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fallback_url: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fallback_method: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status_callback: Option<&'a str>,
+    #[serde(
+        rename = "StatusCallbackEvent",
+        serialize_with = "StatusCallbackEvent::serialize_initiated",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub status_callback_event_initiated: Option<bool>,
+    #[serde(
+        rename = "StatusCallbackEvent",
+        serialize_with = "StatusCallbackEvent::serialize_ringing",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub status_callback_event_ringing: Option<bool>,
+    #[serde(
+        rename = "StatusCallbackEvent",
+        serialize_with = "StatusCallbackEvent::serialize_answered",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub status_callback_event_answered: Option<bool>,
+    #[serde(
+        rename = "StatusCallbackEvent",
+        serialize_with = "StatusCallbackEvent::serialize_completed",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub status_callback_event_completed: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status_callback_method: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub send_digits: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub timeout: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub record: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub recording_channels: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub recording_status_callback: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub recording_status_callback_method: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sip_auth_username: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sip_auth_password: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub machine_detection: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub machine_detection_timeout: Option<u32>,
+    #[serde(
+        rename = "RecordingStatusCallbackEvent",
+        serialize_with = "RecordingStatusCallbackEvent::serialize_in_progress",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub recording_status_callback_event_in_progress: Option<bool>,
+    #[serde(
+        rename = "RecordingStatusCallbackEvent",
+        serialize_with = "RecordingStatusCallbackEvent::serialize_completed",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub recording_status_callback_event_completed: Option<bool>,
+    #[serde(
+        rename = "RecordingStatusCallbackEvent",
+        serialize_with = "RecordingStatusCallbackEvent::serialize_absent",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub recording_status_callback_event_absent: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub trim: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub caller_id: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub machine_detection_speech_threshold: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub machine_detection_speech_end_threshold: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub machine_detection_silence_timeout: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub async_amd: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub async_amd_status_callback: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub async_amd_status_callback_method: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub byoc: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub call_reason: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub call_token: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub recording_track: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub time_limit: Option<u32>,
+}
+
+impl TwilioEndpoint for CreateCall<'_> {
     const PATH: &'static str = "/2010-04-01/Accounts/{AccountSid}/Calls.json";
 
     const METHOD: Method = Method::POST;
@@ -178,66 +292,20 @@ impl TwilioEndpoint for CreateCall {
         vec![("{AccountSid}", &self.account_sid)]
     }
 
-    fn request_body(&self) -> Result<RequestBody> {
-        Ok(RequestBody::Form(self.body.params.clone()))
+    fn configure_request(self, builder: RequestBuilder) -> Result<RequestBuilder>
+    where
+        Self: Sized,
+    {
+        self.body.configure(builder)
     }
 
-    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
+    async fn response_body(resp: Response) -> Result<Self::ResponseBody> {
         Ok(resp.json().await?)
     }
 }
 
-#[derive(Clone, Debug)]
-pub enum TwimlSrc {
-    Url(String),
-    Twiml(String),
-    ApplicationSid(String),
-}
-
-impl TwimlSrc {
-    pub fn url(url: impl Into<String>) -> Self {
-        TwimlSrc::Url(url.into())
-    }
-
-    pub fn twiml(twiml: impl Into<String>) -> Self {
-        TwimlSrc::Twiml(twiml.into())
-    }
-
-    pub fn application_sid(application_sid: impl Into<String>) -> Self {
-        TwimlSrc::ApplicationSid(application_sid.into())
-    }
-
-    pub fn to_string(&self) -> String {
-        match self {
-            TwimlSrc::Url(url) => url.clone(),
-            TwimlSrc::Twiml(twiml) => twiml.clone(),
-            TwimlSrc::ApplicationSid(application_sid) => application_sid.clone(),
-        }
-    }
-}
-
-impl AsRef<str> for TwimlSrc {
-    fn as_ref(&self) -> &str {
-        match self {
-            TwimlSrc::Url(s) => s.as_ref(),
-            TwimlSrc::Twiml(s) => s.as_ref(),
-            TwimlSrc::ApplicationSid(s) => s.as_ref(),
-        }
-    }
-}
-
-impl From<TwimlSrc> for (&'static str, String) {
-    fn from(src: TwimlSrc) -> Self {
-        match src {
-            TwimlSrc::Url(url) => (URL, url),
-            TwimlSrc::Twiml(twiml) => (TWIML, twiml),
-            TwimlSrc::ApplicationSid(sid) => (APPLICATION_SID, sid),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Display)]
-#[strum(serialize_all = "lowercase")]
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum StatusCallbackEvent {
     Initiated,
     Ringing,
@@ -245,234 +313,113 @@ pub enum StatusCallbackEvent {
     Completed,
 }
 
-#[derive(Clone, Debug, Display)]
-#[strum(serialize_all = "kebab-case")]
+impl StatusCallbackEvent {
+    fn serialize_initiated<S>(
+        status_callback_event: &Option<bool>,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        if let Some(true) = status_callback_event {
+            serializer.serialize_str("initiated")
+        } else {
+            serializer.serialize_none()
+        }
+    }
+
+    fn serialize_ringing<S>(
+        status_callback_event: &Option<bool>,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        if let Some(true) = status_callback_event {
+            serializer.serialize_str("ringing")
+        } else {
+            serializer.serialize_none()
+        }
+    }
+
+    fn serialize_answered<S>(
+        status_callback_event: &Option<bool>,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        if let Some(true) = status_callback_event {
+            serializer.serialize_str("answered")
+        } else {
+            serializer.serialize_none()
+        }
+    }
+
+    fn serialize_completed<S>(
+        status_callback_event: &Option<bool>,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        if let Some(true) = status_callback_event {
+            serializer.serialize_str("completed")
+        } else {
+            serializer.serialize_none()
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum RecordingStatusCallbackEvent {
     InProgress,
     Completed,
     Absent,
 }
 
-impl CreateCallBody {
-    pub fn new(to: impl Into<String>, from: impl Into<String>, twilml_src: TwimlSrc) -> Self {
-        let mut params = Vec::new();
-        params.push((TO, to.into()));
-        params.push((FROM, from.into()));
-        params.push(twilml_src.into());
-        Self { params }
+impl RecordingStatusCallbackEvent {
+    fn serialize_in_progress<S>(
+        status_callback_event: &Option<bool>,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        if let Some(true) = status_callback_event {
+            serializer.serialize_str("in-progress")
+        } else {
+            serializer.serialize_none()
+        }
     }
 
-    pub fn with_method(mut self, method: impl Into<String>) -> Self {
-        self.params.push((METHOD, method.into()));
-        self
+    fn serialize_completed<S>(
+        status_callback_event: &Option<bool>,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        if let Some(true) = status_callback_event {
+            serializer.serialize_str("completed")
+        } else {
+            serializer.serialize_none()
+        }
     }
 
-    pub fn with_fallback_url(mut self, fallback_url: impl Into<String>) -> Self {
-        self.params.push((FALLBACK_URL, fallback_url.into()));
-        self
-    }
-
-    pub fn with_fallback_method(mut self, fallback_method: impl Into<String>) -> Self {
-        self.params.push((FALLBACK_METHOD, fallback_method.into()));
-        self
-    }
-
-    pub fn with_status_callback(mut self, status_callback: impl Into<String>) -> Self {
-        self.params.push((STATUS_CALLBACK, status_callback.into()));
-        self
-    }
-
-    pub fn with_status_callback_method(
-        mut self,
-        status_callback_method: impl Into<String>,
-    ) -> Self {
-        self.params
-            .push((STATUS_CALLBACK_METHOD, status_callback_method.into()));
-        self
-    }
-
-    /// The call progress events that we will send to the status_callback URL.
-    /// Can be: initiated, ringing, answered, and completed.
-    /// If no event is specified, we send the completed status.
-    /// If you want to receive multiple events, specify each one in a separate status_callback_event parameter
-    pub fn with_status_callback_event(
-        mut self,
-        status_callback_event: StatusCallbackEvent,
-    ) -> Self {
-        self.params
-            .push((STATUS_CALLBACK_EVENT, status_callback_event.to_string()));
-        self
-    }
-
-    pub fn with_send_digits(mut self, send_digits: impl Into<String>) -> Self {
-        self.params.push((SEND_DIGITS, send_digits.into()));
-        self
-    }
-
-    pub fn with_timeout(mut self, timeout: u32) -> Self {
-        self.params.push((TIMEOUT, timeout.to_string()));
-        self
-    }
-
-    pub fn with_record(mut self, record: bool) -> Self {
-        self.params.push((RECORD, record.to_string()));
-        self
-    }
-
-    pub fn with_recording_channels(mut self, recording_channels: impl Into<String>) -> Self {
-        self.params
-            .push((RECORDING_CHANNELS, recording_channels.into()));
-        self
-    }
-
-    pub fn with_recording_status_callback(
-        mut self,
-        recording_status_callback: impl Into<String>,
-    ) -> Self {
-        self.params
-            .push((RECORDING_STATUS_CALLBACK, recording_status_callback.into()));
-        self
-    }
-
-    pub fn with_recording_status_callback_method(
-        mut self,
-        recording_status_callback_method: impl Into<String>,
-    ) -> Self {
-        self.params.push((
-            RECORDING_STATUS_CALLBACK_METHOD,
-            recording_status_callback_method.into(),
-        ));
-        self
-    }
-
-    pub fn with_recording_status_callback_event(
-        mut self,
-        recording_status_callback_event: RecordingStatusCallbackEvent,
-    ) -> Self {
-        self.params.push((
-            RECORDING_STATUS_CALLBACK_EVENT,
-            recording_status_callback_event.to_string(),
-        ));
-        self
-    }
-
-    pub fn with_recording_track(mut self, recording_track: impl Into<String>) -> Self {
-        self.params.push((RECORDING_TRACK, recording_track.into()));
-        self
-    }
-
-    pub fn with_sip_auth_username(mut self, sip_auth_username: impl Into<String>) -> Self {
-        self.params
-            .push((SIP_AUTH_USERNAME, sip_auth_username.into()));
-        self
-    }
-
-    pub fn with_sip_auth_password(mut self, sip_auth_password: impl Into<String>) -> Self {
-        self.params
-            .push((SIP_AUTH_PASSWORD, sip_auth_password.into()));
-        self
-    }
-
-    pub fn with_machine_detection(mut self, machine_detection: impl Into<String>) -> Self {
-        self.params
-            .push((MACHINE_DETECTION, machine_detection.into()));
-        self
-    }
-
-    pub fn with_machine_detection_timeout(mut self, machine_detection_timeout: u32) -> Self {
-        self.params.push((
-            MACHINE_DETECTION_TIMEOUT,
-            machine_detection_timeout.to_string(),
-        ));
-        self
-    }
-
-    pub fn with_machine_detection_speech_threshold(
-        mut self,
-        machine_detection_speech_threshold: f32,
-    ) -> Self {
-        self.params.push((
-            MACHINE_DETECTION_SPEECH_THRESHOLD,
-            machine_detection_speech_threshold.to_string(),
-        ));
-        self
-    }
-
-    pub fn with_machine_detection_speech_end_threshold(
-        mut self,
-        machine_detection_speech_end_threshold: f32,
-    ) -> Self {
-        self.params.push((
-            MACHINE_DETECTION_SPEECH_END_THRESHOLD,
-            machine_detection_speech_end_threshold.to_string(),
-        ));
-        self
-    }
-
-    pub fn with_machine_detection_silence_timeout(
-        mut self,
-        machine_detection_silence_timeout: u32,
-    ) -> Self {
-        self.params.push((
-            MACHINE_DETECTION_SILENCE_TIMEOUT,
-            machine_detection_silence_timeout.to_string(),
-        ));
-        self
-    }
-
-    pub fn with_trim(mut self, trim: impl Into<String>) -> Self {
-        self.params.push((TRIM, trim.into()));
-        self
-    }
-
-    pub fn with_caller_id(mut self, caller_id: impl Into<String>) -> Self {
-        self.params.push((CALLER_ID, caller_id.into()));
-        self
-    }
-
-    pub fn with_async_amd(mut self, async_amd: bool) -> Self {
-        self.params.push((ASYNC_AMD, async_amd.to_string()));
-        self
-    }
-
-    pub fn with_async_amd_status_callback(
-        mut self,
-        async_amd_status_callback: impl Into<String>,
-    ) -> Self {
-        self.params
-            .push((ASYNC_AMD_STATUS_CALLBACK, async_amd_status_callback.into()));
-        self
-    }
-
-    pub fn with_async_amd_status_callback_method(
-        mut self,
-        async_amd_status_callback_method: impl Into<String>,
-    ) -> Self {
-        self.params.push((
-            ASYNC_AMD_STATUS_CALLBACK_METHOD,
-            async_amd_status_callback_method.into(),
-        ));
-        self
-    }
-
-    pub fn with_byoc_sid(mut self, byoc_sid: impl Into<String>) -> Self {
-        self.params.push((BYOC_SID, byoc_sid.into()));
-        self
-    }
-
-    pub fn with_call_reason(mut self, call_reason: impl Into<String>) -> Self {
-        self.params.push((CALL_REASON, call_reason.into()));
-        self
-    }
-
-    pub fn with_call_token(mut self, call_token: impl Into<String>) -> Self {
-        self.params.push((CALL_TOKEN, call_token.into()));
-        self
-    }
-
-    pub fn with_time_limit(mut self, time_limit: u32) -> Self {
-        self.params.push((TIME_LIMIT, time_limit.to_string()));
-        self
+    fn serialize_absent<S>(
+        status_callback_event: &Option<bool>,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        if let Some(true) = status_callback_event {
+            serializer.serialize_str("absent")
+        } else {
+            serializer.serialize_none()
+        }
     }
 }
 
@@ -566,7 +513,7 @@ impl TwilioEndpoint for FetchCall {
         ]
     }
 
-    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
+    async fn response_body(resp: Response) -> Result<Self::ResponseBody> {
         Ok(resp.json().await?)
     }
 }
@@ -604,7 +551,7 @@ impl TwilioEndpoint for ListCalls {
         vec![("{AccountSid}", &self.account_sid)]
     }
 
-    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
+    async fn response_body(resp: Response) -> Result<Self::ResponseBody> {
         Ok(resp.json().await?)
     }
 }
@@ -616,92 +563,58 @@ pub struct ListCallsResponse {
     pub pagination: Pagination,
 }
 
-#[derive(Clone, Debug)]
-pub struct UpdateCall {
+#[derive(Debug)]
+pub struct UpdateCall<'a> {
     pub account_sid: String,
     pub call_sid: String,
-    pub body: UpdateCallBody,
+    pub body: RequestBody<UpdateCallBody<'a>>,
 }
 
-#[derive(Clone, Debug, Default)]
-pub struct UpdateCallBody {
-    pub params: Vec<(&'static str, String)>,
+#[derive(Clone, Debug, Default, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct UpdateCallBody<'a> {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<UpdateCallStatus>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub twiml: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub method: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fallback_url: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fallback_method: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status_callback: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status_callback_method: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub time_limit: Option<u32>,
 }
 
-#[derive(Clone, Debug, Display)]
-#[strum(serialize_all = "lowercase")]
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum UpdateCallStatus {
     Canceled,
     Completed,
 }
 
-impl UpdateCall {
+impl<'a> UpdateCall<'a> {
     pub fn new(
         account_sid: impl Into<String>,
         call_sid: impl Into<String>,
-        body: UpdateCallBody,
+        body: UpdateCallBody<'a>,
     ) -> Self {
         Self {
             account_sid: account_sid.into(),
             call_sid: call_sid.into(),
-            body,
+            body: RequestBody::Form(body),
         }
     }
 }
 
-// TODO: share methods
-impl UpdateCallBody {
-    pub fn with_status(mut self, status: UpdateCallStatus) -> Self {
-        self.params.push((STATUS, status.to_string()));
-        self
-    }
-
-    pub fn with_twiml(mut self, twiml: impl Into<String>) -> Self {
-        self.params.push((TWIML, twiml.into()));
-        self
-    }
-
-    pub fn with_url(mut self, url: impl Into<String>) -> Self {
-        self.params.push((URL, url.into()));
-        self
-    }
-
-    pub fn with_method(mut self, method: impl Into<String>) -> Self {
-        self.params.push((METHOD, method.into()));
-        self
-    }
-
-    pub fn with_fallback_url(mut self, fallback_url: impl Into<String>) -> Self {
-        self.params.push((FALLBACK_URL, fallback_url.into()));
-        self
-    }
-
-    pub fn with_fallback_method(mut self, fallback_method: impl Into<String>) -> Self {
-        self.params.push((FALLBACK_METHOD, fallback_method.into()));
-        self
-    }
-
-    pub fn with_status_callback(mut self, status_callback: impl Into<String>) -> Self {
-        self.params.push((STATUS_CALLBACK, status_callback.into()));
-        self
-    }
-
-    pub fn with_status_callback_method(
-        mut self,
-        status_callback_method: impl Into<String>,
-    ) -> Self {
-        self.params
-            .push((STATUS_CALLBACK_METHOD, status_callback_method.into()));
-        self
-    }
-
-    pub fn with_time_limit(mut self, time_limit: u32) -> Self {
-        self.params.push((TIME_LIMIT, time_limit.to_string()));
-        self
-    }
-}
-
-impl TwilioEndpoint for UpdateCall {
+impl TwilioEndpoint for UpdateCall<'_> {
     const PATH: &'static str = "/2010-04-01/Accounts/{AccountSid}/Calls/{Sid}.json";
 
     const METHOD: Method = Method::POST;
@@ -715,11 +628,14 @@ impl TwilioEndpoint for UpdateCall {
         ]
     }
 
-    fn request_body(&self) -> Result<RequestBody> {
-        Ok(RequestBody::Form(self.body.params.clone()))
+    fn configure_request(self, builder: RequestBuilder) -> Result<RequestBuilder>
+    where
+        Self: Sized,
+    {
+        self.body.configure(builder)
     }
 
-    async fn response_body(self, resp: Response) -> Result<Self::ResponseBody> {
+    async fn response_body(resp: Response) -> Result<Self::ResponseBody> {
         Ok(resp.json().await?)
     }
 }
@@ -753,7 +669,7 @@ impl TwilioEndpoint for DeleteCall {
         ]
     }
 
-    async fn response_body(self, _resp: Response) -> Result<Self::ResponseBody> {
+    async fn response_body(_resp: Response) -> Result<Self::ResponseBody> {
         Ok(())
     }
 }
