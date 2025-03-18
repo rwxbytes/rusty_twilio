@@ -90,7 +90,7 @@ impl TwilioEndpoint for CreateStream<'_> {
         ]
     }
 
-    fn configure_request(self, builder: RequestBuilder) -> Result<RequestBuilder>
+    fn configure_request_body(self, builder: RequestBuilder) -> Result<RequestBuilder>
     where
         Self: Sized,
     {
@@ -142,15 +142,13 @@ impl TwilioEndpoint for UpdateStream {
         ]
     }
 
-    fn configure_request(self, builder: RequestBuilder) -> Result<RequestBuilder>
+    fn configure_request_body(self, builder: RequestBuilder) -> Result<RequestBuilder>
     where
         Self: Sized,
     {
         let body = vec![("Status", "stopped")];
         Ok(builder.form(&body))
     }
-
-
 
     async fn response_body(resp: Response) -> Result<Self::ResponseBody> {
         Ok(resp.json().await?)

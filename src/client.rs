@@ -61,7 +61,7 @@ impl TwilioClient {
             .request(E::METHOD, endpoint.url(&self.base_url))
             .basic_auth(&self.account_sid, Some(&self.auth_token));
 
-        builder = endpoint.configure_request(builder)?;
+        builder = endpoint.configure_request_body(builder)?;
 
         let resp = builder.send().await?;
 

@@ -75,7 +75,7 @@ impl TwilioEndpoint for CreateAccount<'_> {
 
     type ResponseBody = AccountResponse;
 
-    fn configure_request(self, builder: RequestBuilder) -> Result<RequestBuilder> {
+    fn configure_request_body(self, builder: RequestBuilder) -> Result<RequestBuilder> {
         self.body.configure(builder)
     }
 
@@ -186,7 +186,7 @@ impl TwilioEndpoint for UpdateAccount<'_> {
         vec![("{Sid}", &self.account_sid)]
     }
 
-    fn configure_request(self, builder: RequestBuilder) -> Result<RequestBuilder> {
+    fn configure_request_body(self, builder: RequestBuilder) -> Result<RequestBuilder> {
         self.body.configure(builder)
     }
 

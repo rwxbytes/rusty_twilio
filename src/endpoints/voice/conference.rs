@@ -157,7 +157,7 @@ impl TwilioEndpoint for UpdateConference<'_> {
         ]
     }
 
-    fn configure_request(self, builder: RequestBuilder) -> Result<RequestBuilder>
+    fn configure_request_body(self, builder: RequestBuilder) -> Result<RequestBuilder>
     where
         Self: Sized,
     {
@@ -348,7 +348,7 @@ impl TwilioEndpoint for CreateParticipant<'_> {
         ]
     }
 
-    fn configure_request(self, builder: RequestBuilder) -> Result<RequestBuilder> {
+    fn configure_request_body(self, builder: RequestBuilder) -> Result<RequestBuilder> {
         self.body.configure(builder)
     }
 
@@ -499,7 +499,7 @@ impl TwilioEndpoint for UpdateParticipant<'_> {
         ]
     }
 
-    fn configure_request(self, builder: RequestBuilder) -> Result<RequestBuilder> {
+    fn configure_request_body(self, builder: RequestBuilder) -> Result<RequestBuilder> {
         self.body.configure(builder)
     }
 

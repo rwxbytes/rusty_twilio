@@ -295,7 +295,7 @@ impl TwilioEndpoint for CreateCall<'_> {
         vec![("{AccountSid}", &self.account_sid)]
     }
 
-    fn configure_request(self, builder: RequestBuilder) -> Result<RequestBuilder>
+    fn configure_request_body(self, builder: RequestBuilder) -> Result<RequestBuilder>
     where
         Self: Sized,
     {
@@ -631,7 +631,7 @@ impl TwilioEndpoint for UpdateCall<'_> {
         ]
     }
 
-    fn configure_request(self, builder: RequestBuilder) -> Result<RequestBuilder>
+    fn configure_request_body(self, builder: RequestBuilder) -> Result<RequestBuilder>
     where
         Self: Sized,
     {
