@@ -18,7 +18,6 @@ impl<T> TwilioQuery<T> {
 }
 
 impl<T> TwilioQuery<T> {
-
     pub fn with_page_size(mut self, page_size: u32) -> Self {
         self.params.push(("PageSize", page_size.to_string()));
         self
@@ -43,7 +42,6 @@ impl<T: ByFriendlyName> TwilioQuery<T> {
         self
     }
 }
-
 
 pub trait AccountQueryMarker {}
 impl<T: AccountQueryMarker> TwilioQuery<T> {
@@ -120,6 +118,25 @@ pub trait ConferenceQueryMarker {}
 impl<T: ConferenceQueryMarker> TwilioQuery<T> {
     pub fn with_conference_status(mut self, status: impl Into<String>) -> Self {
         self.params.push(("Status", status.into()));
+        self
+    }
+}
+
+pub trait ParticipantQueryMarker {}
+
+impl<T: ParticipantQueryMarker> TwilioQuery<T> {
+    pub fn with_muted(mut self, muted: bool) -> Self {
+        self.params.push(("Muted", muted.to_string()));
+        self
+    }
+
+    pub fn with_hold(mut self, hold: bool) -> Self {
+        self.params.push(("Hold", hold.to_string()));
+        self
+    }
+
+    pub fn with_coaching(mut self, coaching: bool) -> Self {
+        self.params.push(("Coaching", coaching.to_string()));
         self
     }
 }
