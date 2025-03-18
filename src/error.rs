@@ -36,6 +36,7 @@ pub enum TwilioError {
 }
 
 
+#[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 pub struct TwilioApiError {
     code: i32,
