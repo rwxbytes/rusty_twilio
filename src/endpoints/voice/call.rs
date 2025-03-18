@@ -1,10 +1,12 @@
 //! Call endpoints
 //! See [Call Resource reference](https://www.twilio.com/docs/voice/api/call-resource)
-
+#![allow(unused_imports)]
 use super::*;
 use crate::endpoints::applications::ApiVersion;
 use crate::url::query::{ByToAndFrom, CallQueryMarker, TwilioQuery};
 use std::collections::HashMap;
+use std::string::ToString;
+use strum::Display;
 
 #[derive(Clone, Debug, Deserialize)]
 /// See [Twilio's Request To Your Application](https://www.twilio.com/docs/voice/twiml#twilios-request-to-your-application)
@@ -121,9 +123,10 @@ pub struct CallResponse {
     pub annotation: Option<String>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Display, Serialize)]
 /// See [Call Status](https://www.twilio.com/docs/voice/api/call-resource#call-status-values)
 #[serde(rename_all = "kebab-case")]
+#[strum(serialize_all = "kebab-case")]
 pub enum CallStatus {
     Queued,
     Ringing,
@@ -476,7 +479,7 @@ pub enum RecordingStatus {
     Absent,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum RecordingTrack {
     Inbound,
@@ -570,6 +573,20 @@ pub struct UpdateCall<'a> {
     pub body: RequestBody<UpdateCallBody<'a>>,
 }
 
+impl<'a> UpdateCall<'a> {
+    pub fn new(
+        account_sid: impl Into<String>,
+        call_sid: impl Into<String>,
+        body: UpdateCallBody<'a>,
+    ) -> Self {
+        Self {
+            account_sid: account_sid.into(),
+            call_sid: call_sid.into(),
+            body: RequestBody::Form(body),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct UpdateCallBody<'a> {
@@ -598,20 +615,6 @@ pub struct UpdateCallBody<'a> {
 pub enum UpdateCallStatus {
     Canceled,
     Completed,
-}
-
-impl<'a> UpdateCall<'a> {
-    pub fn new(
-        account_sid: impl Into<String>,
-        call_sid: impl Into<String>,
-        body: UpdateCallBody<'a>,
-    ) -> Self {
-        Self {
-            account_sid: account_sid.into(),
-            call_sid: call_sid.into(),
-            body: RequestBody::Form(body),
-        }
-    }
 }
 
 impl TwilioEndpoint for UpdateCall<'_> {

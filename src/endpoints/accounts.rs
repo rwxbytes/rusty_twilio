@@ -1,5 +1,6 @@
 //! Accounts endpoints
 //! See [Twilio Accounts API](https://www.twilio.com/docs/iam/api/account)
+#![allow(unused_imports)]
 use super::*;
 use crate::url::query::{AccountQueryMarker, ByFriendlyName, TwilioQuery};
 use reqwest::RequestBuilder;

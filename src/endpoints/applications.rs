@@ -1,6 +1,6 @@
 //! Applications endpoints
 //! See [Applications reference](https://www.twilio.com/docs/usage/api/applications)
-
+#![allow(unused_imports)]
 use super::*;
 use crate::url::query::ByFriendlyName;
 use crate::TwilioQuery;
