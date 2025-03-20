@@ -1,5 +1,5 @@
-use serde::Deserialize;
 use crate::validation::SignatureValidationError;
+use serde::Deserialize;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -33,8 +33,9 @@ pub enum TwilioError {
     Validation(#[from] SignatureValidationError),
     #[error("unsupported noun")]
     UnsupportedNoun,
+    #[error("validation error: {0}")]
+    Validator(#[from] validator::ValidationErrors),
 }
-
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug)]
