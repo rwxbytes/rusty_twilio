@@ -610,6 +610,22 @@ pub struct UpdateCallBody<'a> {
     pub time_limit: Option<u32>,
 }
 
+impl<'a> UpdateCallBody<'a> {
+    pub fn twiml(twiml: &'a str) -> Self {
+        Self {
+            twiml: Some(twiml),
+            ..Default::default()
+        }
+    }
+
+    pub fn url(url: &'a str) -> Self {
+        Self {
+            url: Some(url),
+            ..Default::default()
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum UpdateCallStatus {
