@@ -31,11 +31,11 @@ pub struct ConferenceResponse {
 /// See [Conference Request Parameters](https://www.twilio.com/docs/voice/twiml/conference#attributes-statuscallback-parameters)
 pub struct ConferenceRequestParams {
     pub conference_sid: String,
-    pub friendly_name: Option<String>,
+    pub friendly_name: String,
     pub account_sid: String,
     pub sequence_number: u32,
     pub timestamp: String,
-    pub status_callback_event: String,
+    pub status_callback_event: Option<ConferenceEvent>,
     pub call_sid: Option<String>,
     pub muted: Option<bool>,
     pub hold: Option<bool>,
@@ -52,6 +52,33 @@ pub struct ConferenceRequestParams {
     pub recording_url: Option<String>,
     pub duration: Option<u32>,
     pub recording_file_size: Option<u32>,
+}
+
+impl ConferenceRequestParams {
+    pub fn is_conference_end(&self) -> bool {
+        self.status_callback_event
+            .as_ref()
+            .map(|e| e == &ConferenceEvent::ConferenceEnd)
+            .unwrap_or_default()
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub enum ConferenceEvent {
+    ConferenceEnd,
+    ConferenceStart,
+    ParticipantLeave,
+    ParticipantJoin,
+    ParticipantMute,
+    ParticipantUnmute,
+    ParticipantHold,
+    ParticipantUnhold,
+    ParticipantModify,
+    ParticipantSpeechStart,
+    ParticipantSpeechStop,
+    AnnouncementEnd,
+    AnnouncementFail,
 }
 
 #[derive(Clone, Debug)]

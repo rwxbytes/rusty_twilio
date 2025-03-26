@@ -35,6 +35,15 @@ pub struct TwilioRequestParams {
     pub extra: HashMap<String, String>,
 }
 
+impl TwilioRequestParams {
+    pub fn is_no_answer(&self) -> bool {
+        self.call_status == CallStatus::NoAnswer
+    }
+    pub fn get_extra(&self, key: &str) -> Option<&String> {
+        self.extra.get(key)
+    }
+}
+
 #[derive(Clone, Debug, Deserialize)]
 /// See [Call Properties](https://www.twilio.com/docs/voice/api/call-resource#call-properties)
 pub struct CallResponse {
@@ -123,7 +132,7 @@ pub struct CallResponse {
     pub annotation: Option<String>,
 }
 
-#[derive(Clone, Debug, Deserialize, Display, Serialize)]
+#[derive(Clone, Debug, Deserialize, Display, Serialize, PartialEq)]
 /// See [Call Status](https://www.twilio.com/docs/voice/api/call-resource#call-status-values)
 #[serde(rename_all = "kebab-case")]
 #[strum(serialize_all = "kebab-case")]

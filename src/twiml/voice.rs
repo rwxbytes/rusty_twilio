@@ -18,6 +18,11 @@ impl VoiceResponse {
         Self::default()
     }
 
+    pub fn add_verb(mut self, verb: Verb) -> Self {
+        self.verbs.push(verb);
+        self
+    }
+
     pub fn connect(mut self, noun: impl Into<Noun>) -> Self {
         self.verbs.push(Verb::Connect(noun.into()));
         self
@@ -447,6 +452,15 @@ pub struct Parameter {
     pub name: String,
     #[xml(attribute = "value")]
     pub value: String,
+}
+
+impl Parameter {
+    pub fn new(name: impl Into<String>, value: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            value: value.into(),
+        }
+    }
 }
 
 #[cfg(test)]
