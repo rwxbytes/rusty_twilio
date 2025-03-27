@@ -56,7 +56,7 @@ impl VoiceResponse {
         let mut writer = EventWriter::new(Vec::new());
         writer.write(XmlEvent::start_element("Response"))?;
         for verb in &self.verbs {
-            let noun = match &verb {
+            let _ = match &verb {
                 Verb::Connect(noun) => match &noun {
                     Noun::Stream(stream) => {
                         stream.validate()?;
