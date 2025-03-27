@@ -16,5 +16,5 @@ tokio = { version = "1.43.0", features = ["rt", "rt-multi-thread", "macros"] }
 url = "2.5.4"
 xml = "0.8.20"
 base64 = "0.22.1"
-twiml_derive = { path = "../twiml_derive" }
+twiml_derive = { git = "https://github.com/rwxbytes/twiml_derive", branch = "master" }
 validator = { version = "0.20.0", features = ["derive"] }
