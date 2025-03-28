@@ -2,6 +2,7 @@ mod client;
 mod client_ext;
 pub mod endpoints;
 pub mod error;
+pub mod request_parameters;
 pub mod twiml;
 pub mod url;
 pub mod validation;
