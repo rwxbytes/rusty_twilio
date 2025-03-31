@@ -77,6 +77,10 @@ impl TwilioClient {
     pub fn number(&self) -> Option<&str> {
         self.number.as_deref()
     }
+    pub fn with_number(mut self, number: impl Into<String>) -> Self {
+        self.number = Some(number.into());
+        self
+    }
 
     pub fn with_base_url(mut self, base_url: Url) -> Self {
         self.base_url = base_url;
