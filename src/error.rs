@@ -40,8 +40,8 @@ pub enum TwilioError {
 #[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 pub struct TwilioApiError {
-    code: i32,
+    code: u32,
     message: String,
     more_info: String,
-    status: i32,
+    status: u16,
 }

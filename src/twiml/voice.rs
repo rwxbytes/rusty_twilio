@@ -29,7 +29,7 @@ impl VoiceResponse {
     }
 
     pub fn dial(mut self, dial: impl Into<Dial>) -> Self {
-        self.verbs.push(Verb::Dial(dial.into()));
+        self.verbs.push(Verb::Dial(Box::new(dial.into())));
         self
     }
 
@@ -40,7 +40,7 @@ impl VoiceResponse {
 
     pub fn to_http_response(&self) -> Result<Response<Vec<u8>>, TwilioError> {
         let body = self.to_bytes()?;
-        let mut response = Response::new(body.into());
+        let mut response = Response::new(body);
         response
             .headers_mut()
             .insert(CONTENT_TYPE, HeaderValue::from_static("application/xml"));
@@ -56,7 +56,7 @@ impl VoiceResponse {
         let mut writer = EventWriter::new(Vec::new());
         writer.write(XmlEvent::start_element("Response"))?;
         for verb in &self.verbs {
-            let _ = match &verb {
+            match &verb {
                 Verb::Connect(noun) => match &noun {
                     Noun::Stream(stream) => {
                         stream.validate()?;
@@ -84,7 +84,7 @@ pub enum Verb {
     /// See [Connect](https://www.twilio.com/docs/voice/twiml/connect)
     Connect(Noun),
     /// See [Dial](https://www.twilio.com/docs/voice/twiml/dial)
-    Dial(Dial),
+    Dial(Box<Dial>), // Boxed to reduce size
     /// See [Reject](https://www.twilio.com/docs/voice/twiml/reject)
     Reject,
 }
@@ -192,7 +192,7 @@ fn validate_recording_status_callback_event(event: &str) -> Result<(), validator
 
 #[derive(Debug, Clone)]
 pub enum Noun {
-    Conference(Conference),
+    Conference(Box<Conference>), // Boxed to reduce size
     Number(Number),
     Stream(Stream),
 }
@@ -256,11 +256,11 @@ pub struct Conference {
     ///
     /// - true: Plays a beep both when a participant joins and when a participant leaves.
     ///
-    /// - false:	Disables beeps for when participants both join and exit.
+    /// - false: Disables beeps for when participants both join and exit.
     ///
-    /// - onEnter:	Only plays a beep when a participant joins. The beep will not be played when the participant exits.
+    /// - onEnter: Only plays a beep when a participant joins. The beep will not be played when the participant exits.
     ///
-    /// - onExit:	Will not play a beep when a participant joins; only plays a beep when the participant exits.
+    /// - onExit: Will not play a beep when a participant joins; only plays a beep when the participant exits.
     pub beep: Option<String>,
 
     #[xml(attribute = "startConferenceOnEnter")]
@@ -381,7 +381,7 @@ impl Conference {
 
 impl From<Conference> for Noun {
     fn from(conference: Conference) -> Self {
-        Noun::Conference(conference)
+        Noun::Conference(Box::new(conference))
     }
 }
 

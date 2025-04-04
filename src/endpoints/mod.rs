@@ -43,7 +43,7 @@ pub trait TwilioEndpoint {
         url.set_path(&path);
 
         if let Some(query_params) = self.query_params() {
-            url.query_pairs_mut().extend_pairs(query_params.into_iter());
+            url.query_pairs_mut().extend_pairs(query_params);
         }
         url
     }
