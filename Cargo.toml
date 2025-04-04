@@ -2,6 +2,12 @@
 name = "rusty_twilio"
 version = "0.1.0"
 edition = "2021"
+description = "A Rust library for interacting with the Twilio API"
+authors = ["rxwb"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/rwxbytes/elevenlabs_rs"
+keywords = ["twilio", "api", "telephony", "messaging"]
 
 [dependencies]
 hmac = "0.12.1"
