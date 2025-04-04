@@ -1,3 +1,7 @@
+## Contributing
+
+Contributions are welcome.
+
 ### Create Call
 
 ```rust
